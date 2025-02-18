@@ -1,34 +1,32 @@
 # mindmentor
-AI service from network - mentor(RPI) - wifi - tablet - student
+AI-powered Educational Robot for Classrooms
+
+South Korea spends a lot of money on English education, but most of them can not speak.  
+English is language and communication skill, not just wired grammar or context matching quiz.
+
+## Goal
+- Phase 1 - Teaching math, science, english to elementary school children in Korea(or non-native nations), supervised under human teacher.
+- Phase 2 - Everything happened in classroom is up to mindmentor. (plus after school course homework)
+- Phase 3 - humanuiod robot for under 5, or elder care with emotional intelligence.
 
 ## TODO
-Hardware Components
+### Hardware Components
+- Physical robot design and form factor
+- 2 Microphones for voice recognition
+- 1 Speakers for audio output
+- Tablets for student interaction
+- Networking infrastructure for classroom connectivity
 
+### Core AI Systems
+- Natural Language Processing for Korean
+- Speech recognition and generation
+- Real-time response system
+- Multi-student interaction management
+- Classroom management capabilities
 
-Physical robot design and form factor
-Displays/screens for visual interaction
-Microphones for voice recognition
-Speakers for audio output
-Tablets for student interaction
-Networking infrastructure for classroom connectivity
-
-
-Core AI Systems
-
-
-Natural Language Processing for Korean
-Speech recognition and generation
-Real-time response system
-Multi-student interaction management
-Classroom management capabilities
-Educational content delivery system
-
-
-Educational Framework
-
-
-Korean language curriculum integration
-Progress tracking for multiple students
-Personalized learning paths
-Assessment capabilities
-Real-time feedback mechanisms
+### Educational Framework
+- Math, science, english curriculum integration
+- Progress tracking for multiple students
+- Personalized learning paths
+- Assessment capabilities
+- Real-time feedback mechanisms
