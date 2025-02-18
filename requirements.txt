@@ -1,1 +1,2 @@
 Django==5.1.6
+PyAudio==0.2.14
