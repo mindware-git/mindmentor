@@ -1,5 +1,6 @@
 from django.test import TestCase
 import pyaudio
+import cv2
 
 
 class SpeakerTestCase(TestCase):
