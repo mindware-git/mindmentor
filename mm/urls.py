@@ -17,9 +17,12 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from lectures import views as lecture_views
 
 urlpatterns = [
     path("hwmon/", include("hwmon.urls")),
     path("ml/", include("ml.urls")),
+    path("learners/", lecture_views.learners, name="learners"),
+    path("teachers/", lecture_views.teachers, name="teachers"),
     path("admin/", admin.site.urls),
 ]
