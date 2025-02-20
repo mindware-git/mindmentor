@@ -6,7 +6,12 @@ from django.template import loader
 
 
 def learners(request):
-    return HttpResponse("Hello, learners.")
+    template = loader.get_template("lectures/learner_quiz.html")
+
+    context = {
+        "quiz": "What is 2 + 4 is?",
+    }
+    return HttpResponse(template.render(context, request))
 
 
 def teachers(request):
