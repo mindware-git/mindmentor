@@ -9,6 +9,62 @@
     <p>Subject: {{ subject }}</p>
     <p>Course: {{ course }} grade</p>
     <p>Lecture: {{ lecture }}</p>
-    <button>Start</button>
+    <button id="modeButton">Loading...</button>
+
+    <script>
+      async function updateButton() {
+        try {
+          const response = await fetch("/hwmon/mode/");
+          const data = await response.json();
+          const button = document.getElementById("modeButton");
+          if (data.current_mode === "idle") {
+            button.textContent = "Start";
+          } else {
+            button.textContent = "Stop";
+          }
+        } catch (error) {
+          console.error("Error fetching mode:", error);
+        }
+      }
+
+      updateButton();
+
+      document
+        .getElementById("modeButton")
+        .addEventListener("click", function () {
+          const button = this;
+          const currentMode = button.textContent.trim();
+
+          if (currentMode === "Loading..." || currentMode === "Start") {
+            fetch("/hwmon/mode/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: "mode=lecturer",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status !== "failed") {
+                  button.textContent = "Stop";
+                }
+              });
+          } else if (currentMode === "Stop") {
+            fetch("/hwmon/mode/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: "mode=idle",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status !== "failed") {
+                  button.textContent = "Start";
+                }
+              });
+          }
+        });
+    </script>
   </body>
 </html>
