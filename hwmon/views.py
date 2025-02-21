@@ -31,6 +31,10 @@ def mode(request):
         mm_mode = request.POST.get("mode")
 
         print("mm_mode is " + mm_mode)
+        if mm_mode == "teaching_assistant":
+            print("listening")
+        elif mm_mode == "lecturer":
+            print("let's start talking classs meterials")
         MM_MODE = mm_mode
         return JsonResponse({"status": "success"})
     elif request.method == "GET":

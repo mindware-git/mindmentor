@@ -7,5 +7,31 @@
   <body>
     <h1>Q. {{ quiz }}</h1>
     <p>2 + 4 = [ ]</p>
+    <button id="askButton">Ask</button>
+
+    <script>
+      document
+        .getElementById("askButton")
+        .addEventListener("click", async function () {
+          try {
+            const response = await fetch("/hwmon/mode/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: "mode=teaching_assistant", // or any other mode you want to set
+            });
+            const data = await response.json();
+            if (data.status === "success") {
+              alert("Now you can ask!");
+            } else {
+              alert("Failed to change mode.");
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred while trying to change the mode.");
+          }
+        });
+    </script>
   </body>
 </html>
