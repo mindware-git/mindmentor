@@ -4,7 +4,7 @@ AI-powered Educational Robot for Classrooms
 South Korea spends a lot of money on English education, but most of them can not speak.  
 English is language and communication skill, not just wired grammar or context matching quiz.
 
-[Quick Demo](https://www.youtube.com/watch?v=SiOGlsRcOII)
+[Quick Demo](https://www.youtube.com/watch?v=7zxO6yQquXM)
 
 [Full intro](https://www.youtube.com/watch?v=chW95p_S3k8)
 
