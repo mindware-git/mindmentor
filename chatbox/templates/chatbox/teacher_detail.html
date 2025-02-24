@@ -14,7 +14,7 @@
     <script>
       async function updateButton() {
         try {
-          const response = await fetch("/hwmon/mode/");
+          const response = await fetch("/robot/mode");
           const data = await response.json();
           const button = document.getElementById("modeButton");
           if (data.current_mode === "idle") {
@@ -36,7 +36,7 @@
           const currentMode = button.textContent.trim();
 
           if (currentMode === "Loading..." || currentMode === "Start") {
-            fetch("/hwmon/mode/", {
+            fetch("/robot/mode", {
               method: "POST",
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -50,7 +50,7 @@
                 }
               });
           } else if (currentMode === "Stop") {
-            fetch("/hwmon/mode/", {
+            fetch("/robot/mode", {
               method: "POST",
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",

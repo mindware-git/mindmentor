@@ -4,11 +4,12 @@ import pyaudio
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import wave
+import threading
 
 MM_MODE = "idle"
 
 
-def index(request):
+def robot_status(request):
     p = pyaudio.PyAudio()
     info = []
     for i in range(p.get_device_count()):
@@ -18,7 +19,30 @@ def index(request):
         "num_cameras": "? TODO",
         "sound": info,
     }
-    return render(request, "hwmon/index.html", context)
+    return render(request, "chatbox/robot_status.html", context)
+
+
+def learners(request):
+    context = {
+        "quiz": "What is 2 + 4 is?",
+    }
+    return render(request, "chatbox/learner_quiz.html", context)
+
+
+def teachers(request):
+    # teacher = get_object_or_404(Teacher, id=teacher_id)
+    # # Assuming you have a way to get the subject, course, and lecture
+    # subject = Subject.objects.first()  # Replace with actual logic
+    # course = Course.objects.filter(subject=subject).first()  # Replace with actual logic
+    # lecture = Lecture.objects.filter(course=course).first()  # Replace with actual logic
+
+    context = {
+        "teacher": "Jone doe",
+        "subject": "Math",
+        "course": "2nd grade",
+        "lecture": "Add and subtraction",
+    }
+    return render(request, "chatbox/teacher_detail.html", context)
 
 
 @csrf_exempt
@@ -34,10 +58,10 @@ def mode(request):
         print("mm_mode is " + mm_mode)
         if mm_mode == "teaching_assistant":
             print("listening")
-            play_audio("hwmon/res/react_sara.wav")
+            play_audio("chatbox/res/react_sara.wav")
         elif mm_mode == "lecturer":
             print("let's start talking classs meterials")
-            play_audio("hwmon/res/lecture1.wav")
+            play_audio_async("chatbox/res/lecture1.wav")
         MM_MODE = mm_mode
         return JsonResponse({"status": "success"})
     elif request.method == "GET":
@@ -76,3 +100,8 @@ def play_audio(wav_file_path):
     stream.close()
     p.terminate()
     wf.close()
+
+
+def play_audio_async(wav_file_path):
+    thread = threading.Thread(target=play_audio, args=(wav_file_path,), daemon=True)
+    thread.start()
