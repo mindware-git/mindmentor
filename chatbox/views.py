@@ -3,10 +3,7 @@ import os
 import pyaudio
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import wave
-import threading
-
-MM_MODE = "idle"
+from .robot import play_audio, play_audio_async, get_mode, set_mode
 
 
 def robot_status(request):
@@ -47,61 +44,14 @@ def teachers(request):
 
 @csrf_exempt
 def mode(request):
-    global MM_MODE
-
-    valid_modes = ["idle", "lecturer", "teaching_assistant"]
-
     if request.method == "POST":
-        print("current mode " + MM_MODE)
         mm_mode = request.POST.get("mode")
-
-        print("mm_mode is " + mm_mode)
         if mm_mode == "teaching_assistant":
-            print("listening")
             play_audio("chatbox/res/react_sara.wav")
         elif mm_mode == "lecturer":
-            print("let's start talking classs meterials")
             play_audio_async("chatbox/res/lecture1.wav")
-        MM_MODE = mm_mode
+        set_mode(mm_mode)
         return JsonResponse({"status": "success"})
     elif request.method == "GET":
-        print("current mode " + MM_MODE)
-        return JsonResponse({"current_mode": MM_MODE})
+        return JsonResponse({"current_mode": get_mode()})
     return JsonResponse({"status": "failed"}, status=400)
-
-
-def play_audio(wav_file_path):
-
-    # Open the WAV file
-    wf = wave.open(wav_file_path, "rb")
-
-    # Create a PyAudio object
-    p = pyaudio.PyAudio()
-
-    # Open a stream to play the audio
-    stream = p.open(
-        format=p.get_format_from_width(wf.getsampwidth()),
-        channels=wf.getnchannels(),
-        rate=wf.getframerate(),
-        output=True,
-    )
-
-    # Read data in chunks
-    chunk_size = 1024
-    data = wf.readframes(chunk_size)
-
-    # Play the audio
-    while data:
-        stream.write(data)
-        data = wf.readframes(chunk_size)
-
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-    wf.close()
-
-
-def play_audio_async(wav_file_path):
-    thread = threading.Thread(target=play_audio, args=(wav_file_path,), daemon=True)
-    thread.start()
