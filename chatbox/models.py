@@ -48,3 +48,8 @@ https://www.youtube.com/watch?v=dDv4FTqKBmY&t=5s
 class Lecture(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
+
+
+class DeviceStatus(models.Model):
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=False)

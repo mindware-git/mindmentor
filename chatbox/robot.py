@@ -1,8 +1,18 @@
 import wave
 import threading
 import pyaudio
+from .models import DeviceStatus
 
 MM_MODE = "idle"
+
+
+class Robot:
+    """
+    If there is shared resource (e.g. servo, motor) then it should be managed by DeviceStatus
+    """
+
+    def __init__(self):
+        print("Init robot...")
 
 
 def get_mode():

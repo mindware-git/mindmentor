@@ -1,39 +1,40 @@
 """
-Only RPI servo test
+Only RPI5 servo test
+HW pwm needs firmware config /boot/firmware/config.txt
+Check https://github.com/Pioreactor/rpi_hardware_pwm
 """
 
 from django.test import TestCase
 from unittest import skipIf
+import time
 
 try:
-    from gpiozero import Servo
+    from rpi_hardware_pwm import HardwarePWM
 
-    GPIOZERO_AVAILABLE = True
+    RPI5_AVAILABLE = True
 except ImportError:
-    GPIOZERO_AVAILABLE = False
+    RPI5_AVAILABLE = False
 
 
-@skipIf(not GPIOZERO_AVAILABLE, reason="gpiozero not available")
+@skipIf(not RPI5_AVAILABLE, reason="RPI5 only")
 class ServoTestCase(TestCase):
     def setUp(self):
-        self.servo = Servo(18)  # Using GPIO pin 18
+        self.pwm = HardwarePWM(pwm_channel=2, hz=50, chip=2)
+        self.pwm.start(7.5)
+        time.sleep(1)
 
     def tearDown(self):
-        self.servo.close()
+        time.sleep(1)
+        self.pwm.stop()
 
-    def test_servo_movement(self):
+    def test_servo_1ms(self):
         # Test min position
-        self.servo.min()
-        self.assertEqual(self.servo.value, -1)
+        self.pwm.change_duty_cycle(3)
 
+    def test_servo_1_5ms(self):
         # Test mid position
-        self.servo.mid()
-        self.assertEqual(self.servo.value, 0)
+        self.pwm.change_duty_cycle(7.5)
 
+    def test_servo_2ms(self):
         # Test max position
-        self.servo.max()
-        self.assertEqual(self.servo.value, 1)
-
-        # Test specific value
-        self.servo.value = 0.5
-        self.assertEqual(self.servo.value, 0.5)
+        self.pwm.change_duty_cycle(12)
