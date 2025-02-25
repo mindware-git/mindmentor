@@ -1,20 +1,21 @@
 from django.shortcuts import render
 import os
-import pyaudio
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .robot import play_audio, play_audio_async, get_mode, set_mode
+from .models import DeviceStatus
 
 
 def robot_status(request):
-    p = pyaudio.PyAudio()
-    info = []
-    for i in range(p.get_device_count()):
-        info.append(p.get_device_info_by_index(i))
+    try:
+        os_status = DeviceStatus.objects.get(name="os")
+    except DeviceStatus.DoesNotExist:
+        os_status = "OS status not found"  # Fallback message or handle as needed
+
     context = {
-        "os": os.uname(),
+        "os": os_status,
         "num_cameras": "? TODO",
-        "sound": info,
+        # "sound": info,
     }
     return render(request, "chatbox/robot_status.html", context)
 

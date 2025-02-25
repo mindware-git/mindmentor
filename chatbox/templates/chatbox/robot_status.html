@@ -7,8 +7,30 @@
   </head>
   <body>
     <h1>Device Information</h1>
-    <p><strong>Operating System:</strong> {{ os }}</p>
+
+    <h2>Hardware Information</h2>
+    <h3>Profile Fit</h3>
+    <ul>
+      <li>Voice: 1 Microphone, 1 Speaker</li>
+      <li>Head + Servo + Camera: Multiple Cameras and Microphones</li>
+      <li>Bust: Hands + Face Emotion Recognition</li>
+      <li>Humanoid: Just Human Interaction</li>
+    </ul>
+
+    <h2>Device Specifications</h2>
     <p><strong>Number of Cameras:</strong> {{ num_cameras }}</p>
-    <p><strong>Sound information:</strong> {{ sound }}</p>
+    <p><strong>Sound Information:</strong> {{ sound }}</p>
+
+    <h2>Software Information</h2>
+    <h3>Operating System</h3>
+    <p><strong>Operating System:</strong> {{ os }}</p>
+
+    <h3>Software Levels</h3>
+    <ul>
+      <li>Level 1: All from Networking</li>
+      <li>Level 2: Lecture from Local</li>
+      <li>Level 3: Speech-to-Text (STT) and Text-to-Speech (TTS) Local</li>
+      <li>Level 4: Local Large Language Model (LLM)</li>
+    </ul>
   </body>
 </html>
