@@ -2,3 +2,4 @@ Django==5.1.6
 opencv-python==4.11.0.86
 openai[realtime]==1.63.2
 PyAudio==0.2.14
+groq==0.18.0
