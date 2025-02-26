@@ -7,6 +7,9 @@
   </head>
   <body>
     <h1>Device Information</h1>
+    {% for status in device_statuses %}
+    <p>{{ status.name }} - {{ status.note }}</p>
+    {% endfor %}
 
     <h2>Hardware Information</h2>
     <h3>Profile Fit</h3>

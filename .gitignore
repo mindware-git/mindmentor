@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# ignore until database is work with demo
+chatbox/migrations/*.py
+

@@ -53,4 +53,5 @@ class Lecture(models.Model):
 class DeviceStatus(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=False)
+    is_in_use = models.BooleanField(default=False)
     note = models.CharField(max_length=100)

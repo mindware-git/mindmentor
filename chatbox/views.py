@@ -7,15 +7,10 @@ from .models import DeviceStatus
 
 
 def robot_status(request):
-    try:
-        os_status = DeviceStatus.objects.get(name="os")
-    except DeviceStatus.DoesNotExist:
-        os_status = "OS status not found"  # Fallback message or handle as needed
+    device_statuses = DeviceStatus.objects.all()
 
     context = {
-        "os": os_status,
-        "num_cameras": "? TODO",
-        # "sound": info,
+        "device_statuses": device_statuses,
     }
     return render(request, "chatbox/robot_status.html", context)
 

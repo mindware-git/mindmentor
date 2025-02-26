@@ -18,7 +18,6 @@ def init_dev_status_db():
     device_count = p.get_device_count()
 
     # Microphone information
-    mic_devices = []
     for i in range(device_count):
         device_info = p.get_device_info_by_index(i)
         if device_info.get("maxInputChannels") > 0:
@@ -31,13 +30,12 @@ def init_dev_status_db():
                     "name"
                 ),
             }
-            mic_devices.append(mic_info)
-
-    mic_note = json.dumps(mic_devices) if mic_devices else "No microphone found"
-    DeviceStatus.objects.update_or_create(name="mic", defaults={"note": mic_note})
+            mic_note = json.dumps(mic_info)
+            DeviceStatus.objects.update_or_create(
+                name="mic" + str(i), defaults={"note": mic_note}
+            )
 
     # Speaker information
-    spk_devices = []
     for i in range(device_count):
         device_info = p.get_device_info_by_index(i)
         if device_info.get("maxOutputChannels") > 0:
@@ -50,10 +48,14 @@ def init_dev_status_db():
                     "name"
                 ),
             }
-            spk_devices.append(spk_info)
-
-    spk_note = json.dumps(spk_devices) if spk_devices else "No speakers found"
-    DeviceStatus.objects.update_or_create(name="spk", defaults={"note": spk_note})
+            spk_note = json.dumps(spk_info)
+            DeviceStatus.objects.update_or_create(
+                name="spk", defaults={"note": spk_note}
+            )
 
     # Clean up
     p.terminate()
+
+
+init_dev_status_db()
+print("Initialization of robot database is done!")
