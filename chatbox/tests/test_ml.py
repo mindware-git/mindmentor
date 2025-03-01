@@ -47,7 +47,7 @@ class GroqTestCase(TestCase):
         self.client = groq.Client(api_key=settings.GROQ_API_KEY)
 
     def test_transcribe_audio(self):
-        filename = "res/react_sara.wav"
+        filename = "chatbox/res/react_sara.wav"
 
         with open(filename, "rb") as f:
             try:
