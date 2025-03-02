@@ -4,3 +4,4 @@ openai[realtime]==1.63.2
 PyAudio==0.2.14
 groq==0.18.0
 sounddevice==0.5.1
+djlint==1.36.4

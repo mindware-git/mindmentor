@@ -1,37 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Learner's Page</title>
-  </head>
-  <body>
+{% extends "chatbox/base.html" %}
+{% block title %}Learner's Page{% endblock %}
+{% block content %}
     <h1>Q. {{ quiz }}</h1>
     <p>2 + 4 = [ ]</p>
     <button id="askButton">Ask</button>
-
+{% endblock %}
+{% block extra_head %}
     <script>
-      document
-        .getElementById("askButton")
-        .addEventListener("click", async function () {
-          try {
-            const response = await fetch("/robot/mode", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: "mode=teaching_assistant", // or any other mode you want to set
+    document.addEventListener("DOMContentLoaded", function() {
+        document
+            .getElementById("askButton")
+            .addEventListener("click", async function () {
+                try {
+                    const response = await fetch("/robot/mode", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: "mode=teaching_assistant", // or any other mode you want to set
+                    });
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        alert("Now you can ask!");
+                    } else {
+                        alert("Failed to change mode.");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("An error occurred while trying to change the mode.");
+                }
             });
-            const data = await response.json();
-            if (data.status === "success") {
-              alert("Now you can ask!");
-            } else {
-              alert("Failed to change mode.");
-            }
-          } catch (error) {
-            console.error("Error:", error);
-            alert("An error occurred while trying to change the mode.");
-          }
-        });
+    });
     </script>
-  </body>
-</html>
+{% endblock %}
