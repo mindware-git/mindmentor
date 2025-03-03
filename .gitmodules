@@ -1,0 +1,3 @@
+[submodule "chatbox/static/chatbox/mm-course"]
+	path = chatbox/static/chatbox/mm-course
+	url = https://github.com/mindware-git/mm-course.git
