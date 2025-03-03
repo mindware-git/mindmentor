@@ -5,3 +5,5 @@ PyAudio==0.2.14
 groq==0.18.0
 sounddevice==0.5.1
 djlint==1.36.4
+channels[daphne]==4.2.0
+nbclient==0.10.2
