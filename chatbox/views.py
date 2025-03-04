@@ -6,6 +6,17 @@ from .robot import play_audio, play_audio_async, get_mode, set_mode
 from .models import DeviceStatus
 
 
+def auth(request):
+    """Allow users to select their role (teacher or learner)."""
+    if request.method == "POST":
+        role = request.POST.get("role")
+        if role not in ["teacher", "learner"]:
+            return JsonResponse({"error": "Invalid role"}, status=400)
+        request.session["role"] = role
+        return JsonResponse({"message": f"Logged in as {role}"})
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
 def robot_status(request):
     device_statuses = DeviceStatus.objects.all()
 
