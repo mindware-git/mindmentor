@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -125,3 +126,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 OPENAI_API_KEY = ""
 GROQ_API_KEY = ""
+
+ASGI_APPLICATION = "mm.asgi.application"
