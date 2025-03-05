@@ -1,11 +1,11 @@
 {
-  "[json][html]": {
+  "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "[django-html][handlebars]": {
+  "[html][django-html][handlebars]": {
     "editor.defaultFormatter": "monosans.djlint"
   }
 }
