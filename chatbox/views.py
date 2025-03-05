@@ -62,3 +62,7 @@ def mode(request):
     elif request.method == "GET":
         return JsonResponse({"current_mode": get_mode()})
     return JsonResponse({"status": "failed"}, status=400)
+
+
+def home(request):
+    return render(request, "chatbox/home.html")  # Render the home.html template
