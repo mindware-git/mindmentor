@@ -1,8 +1,7 @@
 {% extends "chatbox/base.html" %}
 {% block title %}Learner's Page{% endblock %}
 {% block content %}
-    <h1>Q. {{ quiz }}</h1>
-    <p>2 + 4 = [ ]</p>
+    <h1 id="quiz">Waiting for class...</h1>
     <button id="askButton">Ask</button>
 {% endblock %}
 {% block extra_head %}
@@ -30,6 +29,26 @@
                     alert("An error occurred while trying to change the mode.");
                 }
             });
+
+        const socket = new WebSocket("ws://" + window.location.host + "/ws/classroom/");
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+            document.getElementById("quiz").textContent = "Count: " + message;
+        };
+
+        socket.onopen = function(e) {
+            console.log("WebSocket connection established");
+        };
+
+        socket.onclose = function(e) {
+            console.log("WebSocket connection closed");
+        };
+
+        socket.onerror = function(e) {
+            console.error("WebSocket error", e);
+        };
     });
     </script>
 {% endblock %}

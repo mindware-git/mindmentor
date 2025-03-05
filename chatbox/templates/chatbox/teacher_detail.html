@@ -114,7 +114,7 @@
                     </span>
                     <input type="text"
                            class="pl-10 pr-4 py-2 w-64 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                           placeholder="Search">
+                           placeholder="Search" />
                 </div>
                 <div class="text-gray-600">{% now "j F Y, l" %}</div>
                 <div class="flex items-center">
@@ -150,7 +150,7 @@
                         <div class="flex justify-center mt-6">
                             <button id="modeButton"
                                     class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200">
-                                Loading...
+                                Start
                             </button>
                         </div>
                     </div>
@@ -161,68 +161,53 @@
 {% endblock %}
 {% block extra_head %}
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        async function updateButton() {
-            try {
-                const response = await fetch("/chatbox/api/v1/robot/mode");
-                const data = await response.json();
-                const button = document.getElementById("modeButton");
-                if (data.current_mode === "idle") {
-                    button.textContent = "Start";
-                    button.classList.remove("bg-red-600", "hover:bg-red-700");
-                    button.classList.add("bg-indigo-600", "hover:bg-indigo-700");
-                } else {
-                    button.textContent = "Stop";
-                    button.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
-                    button.classList.add("bg-red-600", "hover:bg-red-700");
-                }
-            } catch (error) {
-                console.error("Error fetching mode:", error);
-            }
+  document.addEventListener("DOMContentLoaded", function () {
+    const socket = new WebSocket(
+      "ws://" + window.location.host + "/ws/classroom/"
+    );
+
+    socket.onopen = function (e) {
+      console.log("WebSocket connection established");
+    };
+
+    socket.onclose = function (e) {
+      console.log("WebSocket connection closed");
+    };
+
+    socket.onerror = function (e) {
+      console.error("WebSocket error", e);
+    };
+
+    document
+      .getElementById("modeButton")
+      .addEventListener("click", function () {
+        const button = this;
+        const currentMode = button.textContent.trim();
+
+        if (currentMode === "Loading..." || currentMode === "Start") {
+          let count = 0;
+          const intervalId = setInterval(() => {
+            count++;
+            socket.send(
+              JSON.stringify({
+                message: count,
+              })
+            );
+          }, 1000);
+
+          button.textContent = "Stop";
+          button.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
+          button.classList.add("bg-red-600", "hover:bg-red-700");
+
+          button.dataset.intervalId = intervalId;
+        } else if (currentMode === "Stop") {
+          clearInterval(button.dataset.intervalId);
+
+          button.textContent = "Start";
+          button.classList.remove("bg-red-600", "hover:bg-red-700");
+          button.classList.add("bg-indigo-600", "hover:bg-indigo-700");
         }
-
-        updateButton();
-
-        document
-            .getElementById("modeButton")
-            .addEventListener("click", function () {
-                const button = this;
-                const currentMode = button.textContent.trim();
-
-                if (currentMode === "Loading..." || currentMode === "Start") {
-                    fetch("//chatbox/api/v1/robot/mode", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                        body: "mode=lecturer",
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.status !== "failed") {
-                                button.textContent = "Stop";
-                                button.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
-                                button.classList.add("bg-red-600", "hover:bg-red-700");
-                            }
-                        });
-                } else if (currentMode === "Stop") {
-                    fetch("//chatbox/api/v1/robot/mode", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                        body: "mode=idle",
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.status !== "failed") {
-                                button.textContent = "Start";
-                                button.classList.remove("bg-red-600", "hover:bg-red-700");
-                                button.classList.add("bg-indigo-600", "hover:bg-indigo-700");
-                            }
-                        });
-                }
-            });
-    });
+      });
+  });
     </script>
 {% endblock %}

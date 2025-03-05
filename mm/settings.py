@@ -128,3 +128,9 @@ OPENAI_API_KEY = ""
 GROQ_API_KEY = ""
 
 ASGI_APPLICATION = "mm.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
