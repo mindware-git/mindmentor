@@ -40,15 +40,26 @@
         socket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             const message = data.message;
-            document.getElementById("quiz").textContent = "Count: " + message;
+            
+            // Display message in a more appropriate way
+            console.log("Received message:", message);
+            
+            // Update the message display
+            if (typeof message === 'object') {
+                document.getElementById("quiz").textContent = "Received: " + message.type + " content";
+            } else {
+                document.getElementById("quiz").textContent = "Count: " + message;
+            }
 
             if (message.type === "image") {
                 const img = document.createElement("img");
-                img.src = "{% static 'chatbox/mm-course/lang/eng/family/image.png' %}";
-                console.log(message.path);
+                // Use the path from the message directly
+                img.src = "{% get_static_prefix %}" + message.path;
+                console.log("Image path:", img.src);
                 img.classList.add("w-full", "h-auto");
                 document.getElementById("content").appendChild(img);
-            } else if (message.type === "clear") {
+            } 
+            else if (message.type === "clear") {
                 document.getElementById("content").innerHTML = "";
             }
         };

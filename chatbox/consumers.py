@@ -40,9 +40,7 @@ class ClassConsumer(AsyncWebsocketConsumer):
                 source = cell.source
                 if "Image(" in source:
                     image_path = source.split('"')[1]
-                    full_image_path = (
-                        "chatbox/static/chatbox/mm-course/lang/eng/family/" + image_path
-                    )
+                    full_image_path = "chatbox/mm-course/lang/eng/family/" + image_path
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
@@ -55,7 +53,6 @@ class ClassConsumer(AsyncWebsocketConsumer):
                         self.room_group_name,
                         {"type": "classroom_message", "message": {"type": "clear"}},
                     )
-                    time.sleep(5)
 
     async def classroom_message(self, event):
         message = event["message"]
