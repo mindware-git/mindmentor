@@ -2,7 +2,6 @@ import json
 import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 from nbformat import read
-from django.conf import settings
 
 
 class ClassConsumer(AsyncWebsocketConsumer):
@@ -37,7 +36,6 @@ class ClassConsumer(AsyncWebsocketConsumer):
             return
 
         for cell in notebook.cells:
-            print("will find")
             if cell.cell_type == "code":
                 source = cell.source
                 if "Image(" in source:
@@ -45,7 +43,6 @@ class ClassConsumer(AsyncWebsocketConsumer):
                     full_image_path = (
                         "chatbox/static/chatbox/mm-course/lang/eng/family/" + image_path
                     )
-                    print(full_image_path)
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
