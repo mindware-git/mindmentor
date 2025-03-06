@@ -1,5 +1,5 @@
 import json
-import time
+import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from nbformat import read
 
@@ -49,10 +49,12 @@ class ClassConsumer(AsyncWebsocketConsumer):
                         },
                     )
                 elif "clear_output(wait=True)" in source:
+                    await asyncio.sleep(2)
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {"type": "classroom_message", "message": {"type": "clear"}},
                     )
+                    await asyncio.sleep(2)
 
     async def classroom_message(self, event):
         message = event["message"]
