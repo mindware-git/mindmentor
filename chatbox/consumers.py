@@ -1,5 +1,8 @@
 import json
+import time
 from channels.generic.websocket import AsyncWebsocketConsumer
+from nbformat import read
+from django.conf import settings
 
 
 class ClassConsumer(AsyncWebsocketConsumer):
@@ -17,9 +20,45 @@ class ClassConsumer(AsyncWebsocketConsumer):
         text_data_json = json.loads(text_data)
         message = text_data_json["message"]
 
-        await self.channel_layer.group_send(
-            self.room_group_name, {"type": "classroom_message", "message": message}
-        )
+        if message == "start_lesson":
+            await self.send_lesson_content()
+
+    async def send_lesson_content(self):
+        try:
+            notebook_path = (
+                "chatbox/static/chatbox/mm-course/lang/eng/family/01_family.ipynb"
+            )
+
+            print(notebook_path)
+            with open(notebook_path) as f:
+                notebook = read(f, as_version=4)
+        except FileNotFoundError:
+            print("Lesson file not found.")
+            return
+
+        for cell in notebook.cells:
+            print("will find")
+            if cell.cell_type == "code":
+                source = cell.source
+                if "Image(" in source:
+                    image_path = source.split('"')[1]
+                    full_image_path = (
+                        "chatbox/static/chatbox/mm-course/lang/eng/family/" + image_path
+                    )
+                    print(full_image_path)
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "classroom_message",
+                            "message": {"type": "image", "path": full_image_path},
+                        },
+                    )
+                elif "clear_output(wait=True)" in source:
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {"type": "classroom_message", "message": {"type": "clear"}},
+                    )
+                    time.sleep(5)
 
     async def classroom_message(self, event):
         message = event["message"]

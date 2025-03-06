@@ -1,8 +1,12 @@
 {% extends "chatbox/base.html" %}
 {% block title %}Learner's Page{% endblock %}
 {% block content %}
-    <h1 id="quiz">Waiting for class...</h1>
-    <button id="askButton">Ask</button>
+    <div class="flex flex-col items-center justify-center h-screen">
+        <h1 class="text-2xl font-bold mb-4">Learner's Page</h1>
+        <div id="content" class="w-full h-auto"></div>
+        <h1 id="quiz">Waiting for class...</h1>
+        <button id="askButton">Ask</button>
+    </div>
 {% endblock %}
 {% block extra_head %}
     <script>
@@ -36,6 +40,15 @@
             const data = JSON.parse(e.data);
             const message = data.message;
             document.getElementById("quiz").textContent = "Count: " + message;
+
+            if (message.type === "image") {
+                const img = document.createElement("img");
+                img.src =  message.path;
+                img.classList.add("w-full", "h-auto");
+                document.getElementById("content").appendChild(img);
+            } else if (message.type === "clear") {
+                document.getElementById("content").innerHTML = "";
+            }
         };
 
         socket.onopen = function(e) {
