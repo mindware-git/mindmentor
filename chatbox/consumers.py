@@ -35,6 +35,10 @@ class ClassConsumer(AsyncWebsocketConsumer):
             print("Lesson file not found.")
             return
 
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "classroom_message", "message": {"type": "sof"}},
+        )
         for cell in notebook.cells:
             if cell.cell_type == "code":
                 source = cell.source
@@ -48,13 +52,32 @@ class ClassConsumer(AsyncWebsocketConsumer):
                             "message": {"type": "image", "path": full_image_path},
                         },
                     )
+                elif "Audio(" in source:
+                    audio_path = source.split('"')[1]
+                    full_audio_path = "chatbox/mm-course/lang/eng/family/" + audio_path
+                    # robot will play the audio file
+                    await asyncio.sleep(5)
+                elif "print(" in source:
+                    print_text = source.split('print("')[1].split('")')[0]
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "classroom_message",
+                            "message": {"type": "text", "content": print_text},
+                        },
+                    )
                 elif "clear_output(wait=True)" in source:
-                    await asyncio.sleep(2)
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {"type": "classroom_message", "message": {"type": "clear"}},
                     )
                     await asyncio.sleep(2)
+
+        # Send EOF message after processing all cells
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "classroom_message", "message": {"type": "eof"}},
+        )
 
     async def classroom_message(self, event):
         message = event["message"]

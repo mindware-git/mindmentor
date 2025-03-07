@@ -12,7 +12,7 @@
 {% block extra_head %}
     <script>
     document.addEventListener("DOMContentLoaded", function() {
-        document
+document
             .getElementById("askButton")
             .addEventListener("click", async function () {
                 try {
@@ -51,15 +51,23 @@
                 document.getElementById("quiz").textContent = "Count: " + message;
             }
 
-            if (message.type === "image") {
+            if (message.type === "sof") {
+                document.getElementById("quiz").textContent = "Start classroom";
+            } else if (message.type === "eof") {
+                document.getElementById("quiz").textContent = "End of classroom";
+            } else if (message.type === "image") {
                 const img = document.createElement("img");
                 // Use the path from the message directly
                 img.src = "{% get_static_prefix %}" + message.path;
                 console.log("Image path:", img.src);
                 img.classList.add("w-full", "h-auto");
                 document.getElementById("content").appendChild(img);
-            } 
-            else if (message.type === "clear") {
+            } else if (message.type === "text") {
+                const textElement = document.createElement("p");
+                textElement.textContent = message.content;
+                textElement.classList.add("text-center", "mt-4");
+                document.getElementById("content").appendChild(textElement);
+            } else if (message.type === "clear") {
                 document.getElementById("content").innerHTML = "";
             }
         };
