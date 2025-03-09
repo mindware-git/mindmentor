@@ -2,6 +2,7 @@ import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from nbformat import read
+from .robot import play_audio_async
 
 
 class ClassConsumer(AsyncWebsocketConsumer):
@@ -54,9 +55,10 @@ class ClassConsumer(AsyncWebsocketConsumer):
                     )
                 elif "Audio(" in source:
                     audio_path = source.split('"')[1]
-                    full_audio_path = "chatbox/mm-course/lang/eng/family/" + audio_path
-                    # robot will play the audio file
-                    await asyncio.sleep(5)
+                    full_audio_path = (
+                        "chatbox/static/chatbox/mm-course/lang/eng/family/" + audio_path
+                    )
+                    await play_audio_async(full_audio_path)
                 elif "print(" in source:
                     print_text = source.split('print("')[1].split('")')[0]
                     await self.channel_layer.group_send(

@@ -2,6 +2,7 @@ import wave
 import threading
 import pyaudio
 from .models import DeviceStatus
+import asyncio
 
 MM_MODE = "idle"
 
@@ -56,6 +57,5 @@ def play_audio(wav_file_path):
     wf.close()
 
 
-def play_audio_async(wav_file_path):
-    thread = threading.Thread(target=play_audio, args=(wav_file_path,), daemon=True)
-    thread.start()
+async def play_audio_async(wav_file_path):
+    await asyncio.to_thread(play_audio, wav_file_path)
