@@ -5,7 +5,7 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "[html][django-html][handlebars]": {
+  "[html]": {
     "editor.defaultFormatter": "monosans.djlint"
   }
 }

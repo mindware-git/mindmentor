@@ -2,11 +2,21 @@
 {% load static %}
 {% block title %}Learner's Page{% endblock %}
 {% block content %}
-    <div class="flex flex-col items-center justify-center h-screen">
-        <h1 class="text-2xl font-bold mb-4">Learner's Page</h1>
-        <div id="content" class="w-full h-auto"></div>
-        <h1 id="quiz">Waiting for class...</h1>
-        <button id="askButton">Ask</button>
+    <div class="relative w-full min-h-screen p-4">
+        <!-- Ask button positioned at top right -->
+        <div class="absolute top-4 right-4">
+            <button id="askButton"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow">
+                Ask
+            </button>
+        </div>
+        <h1 class="text-2xl font-bold mb-4 text-center">Hello!</h1>
+        <div id="content" class="w-full h-auto mb-4"></div>
+        <!-- Blackboard style card for quiz -->
+        <div id="blackboard"
+             class="bg-gray-100 rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
+            <h1 class="text-xl text-gray-700">Waiting for class...</h1>
+        </div>
     </div>
 {% endblock %}
 {% block extra_head %}
@@ -46,21 +56,20 @@ document
             
             // Update the message display
             if (typeof message === 'object') {
-                document.getElementById("quiz").textContent = "Received: " + message.type + " content";
+                document.getElementById("blackboard").querySelector("h1").textContent = "Received: " + message.type + " content";
             } else {
-                document.getElementById("quiz").textContent = "Count: " + message;
+                document.getElementById("blackboard").querySelector("h1").textContent = "Count: " + message;
             }
 
             if (message.type === "sof") {
-                document.getElementById("quiz").textContent = "Start classroom";
+                document.getElementById("blackboard").querySelector("h1").textContent = "Start classroom";
             } else if (message.type === "eof") {
-                document.getElementById("quiz").textContent = "End of classroom";
+                document.getElementById("blackboard").querySelector("h1").textContent = "End of classroom";
             } else if (message.type === "image") {
                 const img = document.createElement("img");
-                // Use the path from the message directly
                 img.src = "{% get_static_prefix %}" + message.path;
                 console.log("Image path:", img.src);
-                img.classList.add("w-full", "h-auto");
+                img.classList.add("max-w-[800px]", "h-auto", "mx-auto", "block");
                 document.getElementById("content").appendChild(img);
             } else if (message.type === "text") {
                 const textElement = document.createElement("p");
