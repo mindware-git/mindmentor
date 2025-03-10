@@ -1,8 +1,15 @@
 import wave
 import threading
 import pyaudio
-from .models import DeviceStatus
 import asyncio
+
+
+# from queue import PriorityQueue
+
+# task_queue = PriorityQueue()
+
+
+stop_event = asyncio.Event()
 
 MM_MODE = "idle"
 
@@ -45,8 +52,9 @@ def play_audio(wav_file_path):
     chunk_size = 1024
     data = wf.readframes(chunk_size)
 
-    # Play the audio
     while data:
+        if stop_event.is_set():
+            break
         stream.write(data)
         data = wf.readframes(chunk_size)
 
@@ -58,4 +66,9 @@ def play_audio(wav_file_path):
 
 
 async def play_audio_async(wav_file_path):
+    stop_event.clear()
     await asyncio.to_thread(play_audio, wav_file_path)
+
+
+async def stop_audio():
+    stop_event.set()

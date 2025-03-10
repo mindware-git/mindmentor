@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from .models import DeviceStatus
+from .models import RobotStatus
 
-admin.site.register(DeviceStatus)
+admin.site.register(RobotStatus)

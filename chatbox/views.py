@@ -3,7 +3,6 @@ import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .robot import play_audio, play_audio_async, get_mode, set_mode
-from .models import DeviceStatus
 
 
 def auth(request):

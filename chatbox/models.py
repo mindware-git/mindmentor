@@ -1,37 +1,5 @@
 from django.db import models
-
-
-class Teacher(models.Model):
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
-
-class Learner(models.Model):
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
-
-"""
-For example math subject, there is 2nd grade course and first lecture.
-"""
-
-
-class Subject(models.Model):
-    name = models.CharField(max_length=100)
-
-
-class Course(models.Model):
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    grade = models.IntegerField()
-
+from django.db.models import JSONField
 
 """
 Example of lecture
@@ -46,12 +14,15 @@ https://www.youtube.com/watch?v=dDv4FTqKBmY&t=5s
 
 
 class Lecture(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
 
 
-class DeviceStatus(models.Model):
+class RobotStatus(models.Model):
     name = models.CharField(max_length=100)
-    is_active = models.BooleanField(default=False)
-    is_in_use = models.BooleanField(default=False)
-    note = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    device = JSONField(default=dict)
+    memory = JSONField(default=dict)
+    description = JSONField(default=dict)
+
+    def __str__(self):
+        return self.name
