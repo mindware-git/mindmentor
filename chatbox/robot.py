@@ -2,6 +2,7 @@ import wave
 import threading
 import pyaudio
 import asyncio
+from .models import RobotStatus
 
 
 # from queue import PriorityQueue
@@ -10,8 +11,6 @@ import asyncio
 
 
 stop_event = asyncio.Event()
-
-MM_MODE = "idle"
 
 
 class Robot:
@@ -22,14 +21,33 @@ class Robot:
     def __init__(self):
         print("Init robot...")
 
+    def init_db(self):
+        """Initialize the robot status in the database if it doesn't exist."""
+        robot_status, created = RobotStatus.objects.get_or_create(
+            name="mindmentor",
+            defaults={
+                "state": "idle",
+                "device": {},
+                "memory": {},
+                "description": {
+                    "version": "1.0",
+                    "capabilities": ["voice_interaction"],
+                    "profile": "voice",
+                },
+            },
+        )
+        return robot_status
+
 
 def get_mode():
-    return MM_MODE
+    robot_status = RobotStatus.objects.get(pk=1)
+    return robot_status.state
 
 
 def set_mode(mode):
-    global MM_MODE
-    MM_MODE = mode
+    robot_status = RobotStatus.objects.get(pk=1)
+    robot_status.state = mode
+    robot_status.save()
 
 
 def play_audio(wav_file_path):

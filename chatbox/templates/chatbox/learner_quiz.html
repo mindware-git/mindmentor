@@ -26,12 +26,8 @@ document
             .getElementById("askButton")
             .addEventListener("click", async function () {
                 try {
-                    const response = await fetch("/robot/mode", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                        },
-                        body: "mode=teaching_assistant", // or any other mode you want to set
+                    const response = await fetch("/chatbox/api/v1/users/learner/ask", {
+                        method: "GET"
                     });
                     const data = await response.json();
                     if (data.status === "success") {

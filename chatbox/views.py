@@ -2,7 +2,8 @@ from django.shortcuts import render
 import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .robot import play_audio, play_audio_async, get_mode, set_mode
+from .robot import Robot, play_audio, play_audio_async, get_mode, set_mode
+from .models import RobotStatus
 
 
 def auth(request):
@@ -48,20 +49,13 @@ def teachers(request):
     return render(request, "chatbox/teacher_detail.html", context)
 
 
-@csrf_exempt
-def robot_state(request):
-    if request.method == "POST":
-        mm_mode = request.POST.get("mode")
-        if mm_mode == "teaching_assistant":
-            play_audio("chatbox/res/react_sara.wav")
-        elif mm_mode == "lecturer":
-            play_audio_async("chatbox/res/lecture1.wav")
-        set_mode(mm_mode)
-        return JsonResponse({"status": "success"})
-    elif request.method == "GET":
-        return JsonResponse({"current_mode": get_mode()})
+def ask_question(request):
+    if request.method == "GET":
+        return JsonResponse({"status": "success"}, status=200)
     return JsonResponse({"status": "failed"}, status=400)
 
 
 def home(request):
+    robot = Robot()
+    robot.init_db()
     return render(request, "chatbox/home.html")  # Render the home.html template
