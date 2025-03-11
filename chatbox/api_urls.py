@@ -6,5 +6,5 @@ urlpatterns = [
     # path("users/learner/ask", views.ask_question, name="ask_question"),
     # path("users/teacher/start", views.start_lecture, name="start_lecture"),
     # path("lectures", views.get_lecture, name="get_lecture"),
-    path("robot/mode", views.mode),
+    path("robot/state", views.robot_state),
 ]

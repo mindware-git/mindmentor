@@ -49,7 +49,7 @@ def teachers(request):
 
 
 @csrf_exempt
-def mode(request):
+def robot_state(request):
     if request.method == "POST":
         mm_mode = request.POST.get("mode")
         if mm_mode == "teaching_assistant":
