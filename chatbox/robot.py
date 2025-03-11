@@ -1,3 +1,12 @@
+"""
+Robot interface.
+Robot can handle on server side using api.
+api will be ask, start, stop lecture.
+
+Also robot will send message to client using websocket.
+Status is maintained in database so that it can be accessed by multiple.
+"""
+
 import wave
 import threading
 import pyaudio
