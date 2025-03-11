@@ -62,4 +62,35 @@ def ask_question(request):
 def home(request):
     robot = Robot()
     robot.init_db()
-    return render(request, "chatbox/home.html")  # Render the home.html template
+
+    # Look for .ipynb files in the course directory and add them to Lecture DB
+    course_dir = os.path.join("chatbox", "static", "chatbox", "mm-course")
+    if os.path.exists(course_dir):
+        for root, dirs, files in os.walk(course_dir):
+            for file in files:
+                if file.endswith(".ipynb"):
+                    # Extract course name from directory path
+                    course_path = os.path.relpath(root, course_dir)
+                    course_name = (
+                        course_path.split(os.sep)[0]
+                        if course_path != "."
+                        else "default"
+                    )
+
+                    # Create or get course
+                    course, _ = Course.objects.get_or_create(name=course_name)
+
+                    # Create lecture with proper title and description
+                    lecture_name = os.path.splitext(file)[0]
+                    lecture_path = os.path.join(root, file)
+                    Lecture.objects.get_or_create(
+                        title=lecture_name,
+                        defaults={
+                            "description": {
+                                "file_path": lecture_path,
+                                "course": course_name,
+                                "content": [],
+                            }
+                        },
+                    )
+    return render(request, "chatbox/home.html")

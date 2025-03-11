@@ -15,6 +15,7 @@ https://www.youtube.com/watch?v=dDv4FTqKBmY&t=5s
 
 class Lecture(models.Model):
     title = models.CharField(max_length=200)
+    description = JSONField(default=dict)
 
 
 class RobotStatus(models.Model):
