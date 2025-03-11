@@ -3,6 +3,9 @@ import threading
 import pyaudio
 import asyncio
 from .models import RobotStatus
+from nbformat import read
+from asgiref.sync import sync_to_async
+from channels.layers import get_channel_layer
 
 
 # from queue import PriorityQueue
@@ -112,3 +115,77 @@ async def play_audio_async(wav_file_path):
 
 async def stop_audio():
     stop_event.set()
+
+
+async def process_notebook(room_group_name):
+    notebook_path = "chatbox/static/chatbox/mm-course/lang/eng/family/01_family.ipynb"
+    try:
+        with open(notebook_path) as f:
+            notebook = read(f, as_version=4)
+    except FileNotFoundError:
+        print("Lesson file not found.")
+        return
+
+    channel_layer = get_channel_layer()
+
+    await channel_layer.group_send(
+        room_group_name,
+        {"type": "classroom_message", "message": {"type": "sof"}},
+    )
+
+    for idx, cell in enumerate(notebook.cells):
+        if cell.cell_type == "code":
+            source = cell.source
+            if "Image(" in source:
+                image_path = source.split('"')[1]
+                full_image_path = "chatbox/mm-course/lang/eng/family/" + image_path
+                await channel_layer.group_send(
+                    room_group_name,
+                    {
+                        "type": "classroom_message",
+                        "message": {"type": "image", "path": full_image_path},
+                    },
+                )
+            elif "Audio(" in source:
+                audio_path = source.split('"')[1]
+                full_audio_path = (
+                    "chatbox/static/chatbox/mm-course/lang/eng/family/" + audio_path
+                )
+                # Save current lesson state before playing audio
+                await sync_to_async(_save_lesson_state)(notebook_path, idx)
+                await play_audio_async(full_audio_path)
+            elif "print(" in source:
+                print_text = source.split('print("')[1].split('")')[0]
+                await channel_layer.group_send(
+                    room_group_name,
+                    {
+                        "type": "classroom_message",
+                        "message": {"type": "text", "content": print_text},
+                    },
+                )
+            elif "clear_output(wait=True)" in source:
+                await channel_layer.group_send(
+                    room_group_name,
+                    {"type": "classroom_message", "message": {"type": "clear"}},
+                )
+                await asyncio.sleep(2)
+
+    # Send EOF message after processing all cells
+    await channel_layer.group_send(
+        room_group_name,
+        {"type": "classroom_message", "message": {"type": "eof"}},
+    )
+
+
+async def send_lesson_content(room_group_name):
+    await process_notebook(room_group_name)
+
+
+def _save_lesson_state(notebook_path, current_cell_index):
+    """Save the current lesson state to RobotStatus memory"""
+    robot_status = RobotStatus.objects.get(pk=1)
+    robot_status.memory["current_lesson"] = {
+        "notebook_path": notebook_path,
+        "cell_index": current_cell_index,
+    }
+    robot_status.save()
