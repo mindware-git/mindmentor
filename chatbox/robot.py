@@ -38,6 +38,28 @@ class Robot:
         )
         return robot_status
 
+    def get_question(self):
+        """
+        Check if robot can accept questions based on its current state.
+        If in a valid state, changes to teaching_assistant mode.
+        Returns:
+            dict: Response with status code 200 if robot can accept questions,
+                 400 otherwise
+        """
+        robot_status = RobotStatus.objects.get(pk=1)
+        if robot_status.state in ["idle", "lecturer"]:
+
+            previous_state = robot_status.state
+
+            if robot_status.state == "lecturer":
+                asyncio.run(stop_audio())
+                robot_status.memory["previous_state"] = previous_state
+
+            robot_status.state = "teaching_assistant"
+            robot_status.save()
+            return {"status": "success", "status_code": 200}
+        return {"status": "failed", "status_code": 400}
+
 
 def get_mode():
     robot_status = RobotStatus.objects.get(pk=1)

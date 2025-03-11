@@ -2,7 +2,8 @@ import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from nbformat import read
-from .robot import play_audio_async
+from .robot import play_audio_async, set_mode, RobotStatus
+from asgiref.sync import sync_to_async
 
 
 class ClassConsumer(AsyncWebsocketConsumer):
@@ -21,8 +22,11 @@ class ClassConsumer(AsyncWebsocketConsumer):
         message = text_data_json["message"]
 
         if message == "start_lesson":
+            await sync_to_async(set_mode)("lecturer")
             await self.send_lesson_content()
 
+    # TODO: send lesson content should be snapshot..
+    # Full contents should be in Robot.
     async def send_lesson_content(self):
         try:
             notebook_path = (
@@ -40,7 +44,8 @@ class ClassConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {"type": "classroom_message", "message": {"type": "sof"}},
         )
-        for cell in notebook.cells:
+
+        for idx, cell in enumerate(notebook.cells):
             if cell.cell_type == "code":
                 source = cell.source
                 if "Image(" in source:
@@ -58,6 +63,8 @@ class ClassConsumer(AsyncWebsocketConsumer):
                     full_audio_path = (
                         "chatbox/static/chatbox/mm-course/lang/eng/family/" + audio_path
                     )
+                    # Save current lesson state before playing audio
+                    await sync_to_async(self._save_lesson_state)(notebook_path, idx)
                     await play_audio_async(full_audio_path)
                 elif "print(" in source:
                     print_text = source.split('print("')[1].split('")')[0]
@@ -80,6 +87,15 @@ class ClassConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {"type": "classroom_message", "message": {"type": "eof"}},
         )
+
+    def _save_lesson_state(self, notebook_path, current_cell_index):
+        """Save the current lesson state to RobotStatus memory"""
+        robot_status = RobotStatus.objects.get(pk=1)
+        robot_status.memory["current_lesson"] = {
+            "notebook_path": notebook_path,
+            "cell_index": current_cell_index,
+        }
+        robot_status.save()
 
     async def classroom_message(self, event):
         message = event["message"]

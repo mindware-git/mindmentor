@@ -51,7 +51,11 @@ def teachers(request):
 
 def ask_question(request):
     if request.method == "GET":
-        return JsonResponse({"status": "success"}, status=200)
+        robot = Robot()
+        response = robot.get_question()
+        return JsonResponse(
+            {"status": response["status"]}, status=response["status_code"]
+        )
     return JsonResponse({"status": "failed"}, status=400)
 
 
