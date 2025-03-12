@@ -1,0 +1,16 @@
+{% extends "chatbox/base.html" %}
+{% block title %}Select lectures{% endblock %}
+{% block content %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-2xl font-bold mb-4">Lecture List</h1>
+        <ul class="space-y-4">
+            {% for lecture in lectures %}
+                <li class="bg-white shadow-md rounded-lg p-4 transition duration-300 hover:bg-gray-100">
+                    <a href="{% url 'lecture' lecture.id %}"
+                       class="text-blue-600 hover:text-blue-800">{{ lecture.title }}</a>
+                    <p class="text-gray-700 mt-2">{{ lecture.description.course }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

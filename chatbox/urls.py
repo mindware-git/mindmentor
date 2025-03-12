@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     path("api/v1/", include("chatbox.api_urls")),
     path("home", views.home),
+    path("lectures", views.lectures),
+    path("lecture/<int:lecture_id>", views.lecture, name="lecture"),
     path("users/teacher", views.teachers),
     path("users/learner", views.learners),
     path("robot/status", views.robot_status),

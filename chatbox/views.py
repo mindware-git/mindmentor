@@ -3,7 +3,7 @@ import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .robot import Robot, play_audio, play_audio_async, get_mode, set_mode
-from .models import RobotStatus
+from .models import RobotStatus, Lecture
 
 
 def auth(request):
@@ -77,9 +77,6 @@ def home(request):
                         else "default"
                     )
 
-                    # Create or get course
-                    course, _ = Course.objects.get_or_create(name=course_name)
-
                     # Create lecture with proper title and description
                     lecture_name = os.path.splitext(file)[0]
                     lecture_path = os.path.join(root, file)
@@ -94,3 +91,15 @@ def home(request):
                         },
                     )
     return render(request, "chatbox/home.html")
+
+
+def lectures(request):
+    lectures = Lecture.objects.all()
+    context = {"lectures": lectures}
+    return render(request, "chatbox/lectures.html", context)
+
+
+def lecture(request, lecture_id):
+    lecture = Lecture.objects.get(id=lecture_id)
+    context = {"lecture": lecture}
+    return render(request, "chatbox/lecture.html", context)
