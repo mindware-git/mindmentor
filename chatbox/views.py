@@ -103,3 +103,75 @@ def lecture(request, lecture_id):
     lecture = Lecture.objects.get(id=lecture_id)
     context = {"lecture": lecture}
     return render(request, "chatbox/lecture.html", context)
+
+
+def start_lecture(request, lecture_id):
+    """Start a lecture session."""
+    if request.method == "GET":
+        try:
+            lecture = Lecture.objects.get(id=lecture_id)
+            # robot = Robot()
+
+            # # Initialize the lecture in robot
+            # response = robot.start_lecture(lecture)
+
+            # if response.get("status") == "success":
+            #     return JsonResponse(
+            #         {
+            #             "message": "Lecture started successfully",
+            #             "lecture_id": lecture_id,
+            #         }
+            #     )
+            # else:
+            #     return JsonResponse(
+            #         {
+            #             "error": "Failed to start lecture",
+            #             "details": response.get("message", "Unknown error"),
+            #         },
+            #         status=500,
+            #     )
+
+        except Lecture.DoesNotExist:
+            return JsonResponse({"error": "Lecture not found"}, status=404)
+        except Exception as e:
+            return JsonResponse(
+                {"error": "Server error", "details": str(e)}, status=500
+            )
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+def stop_lecture(request, lecture_id):
+    """Start a lecture session."""
+    if request.method == "GET":
+        try:
+            lecture = Lecture.objects.get(id=lecture_id)
+            # robot = Robot()
+
+            # # Initialize the lecture in robot
+            # response = robot.start_lecture(lecture)
+
+            # if response.get("status") == "success":
+            #     return JsonResponse(
+            #         {
+            #             "message": "Lecture started successfully",
+            #             "lecture_id": lecture_id,
+            #         }
+            #     )
+            # else:
+            #     return JsonResponse(
+            #         {
+            #             "error": "Failed to start lecture",
+            #             "details": response.get("message", "Unknown error"),
+            #         },
+            #         status=500,
+            #     )
+
+        except Lecture.DoesNotExist:
+            return JsonResponse({"error": "Lecture not found"}, status=404)
+        except Exception as e:
+            return JsonResponse(
+                {"error": "Server error", "details": str(e)}, status=500
+            )
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
