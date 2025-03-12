@@ -130,6 +130,7 @@ def start_lecture(request, lecture_id):
             #         },
             #         status=500,
             #     )
+            return JsonResponse({"message": "Lecture started successfully"})
 
         except Lecture.DoesNotExist:
             return JsonResponse({"error": "Lecture not found"}, status=404)
@@ -166,6 +167,7 @@ def stop_lecture(request, lecture_id):
             #         },
             #         status=500,
             #     )
+            return JsonResponse({"message": "Lecture stopped successfully"})
 
         except Lecture.DoesNotExist:
             return JsonResponse({"error": "Lecture not found"}, status=404)
