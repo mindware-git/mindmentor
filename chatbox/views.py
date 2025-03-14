@@ -1,9 +1,11 @@
-from django.shortcuts import render
 import os
+from django.shortcuts import render
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .robot import Robot, play_audio, play_audio_async, get_mode, set_mode
-from .models import RobotStatus, Lecture
+
+from .robot import Robot, send_lesson_content
+from .models import Lecture
+
+robot = Robot()
 
 
 def auth(request):
@@ -110,27 +112,10 @@ def start_lecture(request, lecture_id):
     if request.method == "GET":
         try:
             lecture = Lecture.objects.get(id=lecture_id)
-            # robot = Robot()
-
-            # # Initialize the lecture in robot
-            # response = robot.start_lecture(lecture)
-
-            # if response.get("status") == "success":
-            #     return JsonResponse(
-            #         {
-            #             "message": "Lecture started successfully",
-            #             "lecture_id": lecture_id,
-            #         }
-            #     )
-            # else:
-            #     return JsonResponse(
-            #         {
-            #             "error": "Failed to start lecture",
-            #             "details": response.get("message", "Unknown error"),
-            #         },
-            #         status=500,
-            #     )
-            return JsonResponse({"message": "Lecture started successfully"})
+            if robot.restore_lecture_and_resume():
+                return JsonResponse({"message": "Lecture started successfully"})
+            else:
+                return JsonResponse({"error": "Robot busy"}, status=500)
 
         except Lecture.DoesNotExist:
             return JsonResponse({"error": "Lecture not found"}, status=404)
@@ -147,27 +132,10 @@ def stop_lecture(request, lecture_id):
     if request.method == "GET":
         try:
             lecture = Lecture.objects.get(id=lecture_id)
-            # robot = Robot()
-
-            # # Initialize the lecture in robot
-            # response = robot.start_lecture(lecture)
-
-            # if response.get("status") == "success":
-            #     return JsonResponse(
-            #         {
-            #             "message": "Lecture started successfully",
-            #             "lecture_id": lecture_id,
-            #         }
-            #     )
-            # else:
-            #     return JsonResponse(
-            #         {
-            #             "error": "Failed to start lecture",
-            #             "details": response.get("message", "Unknown error"),
-            #         },
-            #         status=500,
-            #     )
-            return JsonResponse({"message": "Lecture stopped successfully"})
+            if robot.save_lecture_and_exit():
+                return JsonResponse({"message": "Lecture started successfully"})
+            else:
+                return JsonResponse({"message": "Lecture stopped successfully"})
 
         except Lecture.DoesNotExist:
             return JsonResponse({"error": "Lecture not found"}, status=404)

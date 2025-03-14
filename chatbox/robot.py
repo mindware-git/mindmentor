@@ -7,20 +7,16 @@ Also robot will send message to client using websocket.
 Status is maintained in database so that it can be accessed by multiple.
 """
 
+import time
 import wave
-import threading
 import pyaudio
 import asyncio
+import sounddevice
 from .models import RobotStatus
 from nbformat import read
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 from channels.layers import get_channel_layer
-
-
-# from queue import PriorityQueue
-
-# task_queue = PriorityQueue()
-
+import threading
 
 stop_event = asyncio.Event()
 
@@ -32,6 +28,10 @@ class Robot:
 
     def __init__(self):
         print("Init robot...")
+        self.memory = 0  # 마지막에 센 숫자를 저장
+        self.lecture_thread = None  # lecture 쓰레드 객체
+        self.stop_event = threading.Event()  # 쓰레드 종료 신호
+        self.wav_file_path = "chatbox/res/lecture1.wav"
 
     def init_db(self):
         """Initialize the robot status in the database if it doesn't exist."""
@@ -40,7 +40,12 @@ class Robot:
             defaults={
                 "state": "idle",
                 "device": {},
-                "memory": {},
+                "memory": {
+                    "ipynb": "",
+                    "current_lesson": 0,
+                    "current_code_style": "",
+                    "current_code_info": 0,
+                },
                 "description": {
                     "version": "1.0",
                     "capabilities": ["voice_interaction"],
@@ -48,40 +53,106 @@ class Robot:
                 },
             },
         )
-        return robot_status
 
-    def get_question(self):
-        """
-        Check if robot can accept questions based on its current state.
-        If in a valid state, changes to teaching_assistant mode.
-        Returns:
-            dict: Response with status code 200 if robot can accept questions,
-                 400 otherwise
-        """
-        robot_status = RobotStatus.objects.get(pk=1)
-        if robot_status.state in ["idle", "lecturer"]:
+    def get_state(self) -> str:
+        rv = ""
+        status = RobotStatus.objects.get(name="mindmentor")
+        rv = status.state
+        return rv
 
-            previous_state = robot_status.state
+    # def set_ipynb(self):
+    #     status = RobotStatus.objects.get(id=1)
+    #     status.memory["ipynb"] = (
+    #         "chatbox/static/chatbox/mm-course/lang/eng/family/01_family.ipynb"
+    #     )
+    #     status.save()
 
-            if robot_status.state == "lecturer":
-                asyncio.run(stop_audio())
-                robot_status.memory["previous_state"] = previous_state
+    def restore_lecture_and_resume(self) -> bool:
+        status = RobotStatus.objects.get(name="mindmentor")
+        if status.state == "lecturer":
+            print("Already lecturing")
+            return False
 
-            robot_status.state = "teaching_assistant"
-            robot_status.save()
-            return {"status": "success", "status_code": 200}
-        return {"status": "failed", "status_code": 400}
+        status.state = "lecturer"
+        status.save()
 
+        if self.lecture_thread is None or not self.lecture_thread.is_alive():
+            self.stop_event.clear()
+            self.lecture_thread = threading.Thread(target=self.lecture)
+            self.lecture_thread.start()
+            return True
+        else:
+            print("should not be here!")
+        return False
 
-def get_mode():
-    robot_status = RobotStatus.objects.get(pk=1)
-    return robot_status.state
+    def save_lecture_and_exit(self) -> bool:
+        status = RobotStatus.objects.get(name="mindmentor")
+        if status.state != "lecturer":
+            print("Not lecturing")
+            return False
 
+        if self.lecture_thread and self.lecture_thread.is_alive():
+            self.stop_event.set()
+        else:
+            print("Lecture thread is not running.")
 
-def set_mode(mode):
-    robot_status = RobotStatus.objects.get(pk=1)
-    robot_status.state = mode
-    robot_status.save()
+        # Wait for the thread to finish
+        if self.lecture_thread:
+            self.lecture_thread.join()  # Wait for the thread to finish
+
+        status = RobotStatus.objects.get(name="mindmentor")
+        status.state = "idle"
+        status.save()
+        return True
+
+    def lecture(self):
+        # restore memory
+        status = RobotStatus.objects.get(name="mindmentor")
+        # ipynb = status.memory["ipynb"]
+        # code_idx = status.memory["current_lesson"]
+        # code_style = status.memory["current_code_style"]
+        code_info = status.memory["current_code_info"]
+
+        # go to step
+
+        # basically lecture is just play audio for now
+        # TODO: Change it to lecture
+
+        # Open the WAV file
+        wf = wave.open(self.wav_file_path, "rb")
+
+        # Create a PyAudio object
+        p = pyaudio.PyAudio()
+
+        # Open a stream to play the audio
+        stream = p.open(
+            format=p.get_format_from_width(wf.getsampwidth()),
+            channels=wf.getnchannels(),
+            rate=wf.getframerate(),
+            output=True,
+        )
+
+        # Read data in chunks
+        chunk_size = 1024
+        # move wf to code_info
+        wf.setpos(code_info * chunk_size)
+
+        data = wf.readframes(chunk_size)
+
+        while data and not self.stop_event.is_set():
+            stream.write(data)
+            code_info += 1
+            data = wf.readframes(chunk_size)
+
+        status = RobotStatus.objects.get(name="mindmentor")
+        status.memory["current_code_info"] = code_info
+        status.save()
+
+        # Stop and close the stream
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        wf.close()
 
 
 def play_audio(wav_file_path):
@@ -186,8 +257,8 @@ async def process_notebook(room_group_name):
     )
 
 
-async def send_lesson_content(room_group_name):
-    await process_notebook(room_group_name)
+def send_lesson_content():
+    async_to_sync(process_notebook)("classroom")
 
 
 def _save_lesson_state(notebook_path, current_cell_index):
