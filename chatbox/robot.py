@@ -128,6 +128,11 @@ class Robot:
                 return
 
             for idx, cell in enumerate(notebook.cells):
+
+                # jump to status.memory["current_lesson"]
+                if idx < code_idx:
+                    continue
+
                 if cell.cell_type == "code":
                     source = cell.source
                     if "Image(" in source:
@@ -167,9 +172,8 @@ class Robot:
                         )
                         time.sleep(2)
 
-                    status.memory["current_lesson"] = idx
-                    status.save()
-
+                status.memory["current_lesson"] = idx + 1
+                status.save()
                 if self.stop_event.is_set():
                     return
 
