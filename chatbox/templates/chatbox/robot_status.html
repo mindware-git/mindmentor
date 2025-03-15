@@ -1,42 +1,42 @@
 {% extends "chatbox/base.html" %}
 {% block title %}System Information{% endblock %}
 {% block content %}
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-8">System Information</h1>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="status-container">
+        <h1 class="status-title">System Information</h1>
+        <div class="status-grid">
             <!-- Platform Information Card -->
-            <div class="bg-white rounded-lg shadow-lg p-6 h-full">
-                <h2 class="text-xl font-semibold mb-4">Platform Information</h2>
-                <div class="space-y-3">
-                    <div>
-                        <h3 class="font-medium">Operating System</h3>
+            <div class="status-card">
+                <h2 class="card-title">Platform Information</h2>
+                <div class="info-section">
+                    <div class="info-item">
+                        <h3 class="info-label">Operating System</h3>
                         <p>{{ platform.os }}</p>
                     </div>
-                    <div>
-                        <h3 class="font-medium">Memory</h3>
+                    <div class="info-item">
+                        <h3 class="info-label">Memory</h3>
                         <p>{{ platform.memory }}</p>
                     </div>
-                    <div>
-                        <h3 class="font-medium">CPU</h3>
+                    <div class="info-item">
+                        <h3 class="info-label">CPU</h3>
                         <p>{{ platform.cpu }}</p>
                     </div>
-                    <div>
-                        <h3 class="font-medium">NPU</h3>
+                    <div class="info-item">
+                        <h3 class="info-label">NPU</h3>
                         <p>{{ platform.npu }}</p>
                     </div>
                 </div>
             </div>
             <!-- Software Information Card -->
-            <div class="bg-white rounded-lg shadow-lg p-6 h-full">
-                <h2 class="text-xl font-semibold mb-4">Software Information</h2>
-                <div class="space-y-3">
-                    <div>
-                        <h3 class="font-medium">Django Version</h3>
+            <div class="status-card">
+                <h2 class="card-title">Software Information</h2>
+                <div class="info-section">
+                    <div class="info-item">
+                        <h3 class="info-label">Django Version</h3>
                         <p>{{ software.django_version }}</p>
                     </div>
-                    <div>
-                        <h3 class="font-medium">Software Levels</h3>
-                        <ul class="list-disc pl-5 space-y-1">
+                    <div class="info-item">
+                        <h3 class="info-label">Software Levels</h3>
+                        <ul class="info-list">
                             <li>Level 1: All from Networking</li>
                             <li>Level 2: Lecture from Local</li>
                             <li>Level 3: STT and TTS Local</li>
@@ -46,107 +46,73 @@
                 </div>
             </div>
             <!-- Hardware Information Card -->
-            <div class="bg-white rounded-lg shadow-lg p-6 h-full">
-                <h2 class="text-xl font-semibold mb-4">Hardware Information</h2>
-                <div class="space-y-3">
-                    <div>
-                        <h3 class="font-medium">Profile Fit</h3>
-                        <div class="space-y-2">
-                            <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150">
+            <div class="status-card">
+                <h2 class="card-title">Hardware Information</h2>
+                <div class="info-section">
+                    <div class="info-item">
+                        <h3 class="info-label">Profile Fit</h3>
+                        <div class="profile-list">
+                            <div class="profile-item">
                                 <input type="radio"
                                        id="voice-profile"
                                        name="profile"
                                        value="voice"
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                       class="profile-radio"
                                        checked>
-                                <label for="voice-profile" class="flex-1 cursor-pointer">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-blue-600">Voice Profile</span>
-                                        <span class="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full">Active</span>
+                                <label for="voice-profile" class="profile-content">
+                                    <div class="profile-header">
+                                        <span class="profile-name active">Voice Profile</span>
+                                        <span class="profile-tag">Active</span>
                                     </div>
-                                    <p class="mt-1 text-sm text-gray-500">1 Microphone, 1 Speaker</p>
+                                    <p class="profile-description">1 Microphone, 1 Speaker</p>
                                 </label>
                             </div>
-                            <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150">
+                            <div class="profile-item">
                                 <input type="radio"
                                        id="head-profile"
                                        name="profile"
                                        value="head"
-                                       class="h-4 w-4 text-gray-600 focus:ring-blue-500">
-                                <label for="head-profile" class="flex-1 cursor-pointer">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-gray-700">Vision Profile</span>
+                                       class="profile-radio">
+                                <label for="head-profile" class="profile-content">
+                                    <div class="profile-header">
+                                        <span class="profile-name">Vision Profile</span>
                                     </div>
-                                    <p class="mt-1 text-sm text-gray-500">Voice + servo + cameras</p>
+                                    <p class="profile-description">Voice + servo + cameras</p>
                                 </label>
                             </div>
-                            <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150">
+                            <div class="profile-item">
                                 <input type="radio"
                                        id="bust-profile"
                                        name="profile"
                                        value="bust"
-                                       class="h-4 w-4 text-gray-600 focus:ring-blue-500">
-                                <label for="bust-profile" class="flex-1 cursor-pointer">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-gray-700">Bust Profile</span>
+                                       class="profile-radio">
+                                <label for="bust-profile" class="profile-content">
+                                    <div class="profile-header">
+                                        <span class="profile-name">Bust Profile</span>
                                     </div>
-                                    <p class="mt-1 text-sm text-gray-500">Vision + Hands + Face Emotion Recognition</p>
+                                    <p class="profile-description">Vision + Hands + Face Emotion Recognition</p>
                                 </label>
                             </div>
-                            <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150">
+                            <div class="profile-item">
                                 <input type="radio"
                                        id="humanoid-profile"
                                        name="profile"
                                        value="humanoid"
-                                       class="h-4 w-4 text-gray-600 focus:ring-blue-500">
-                                <label for="humanoid-profile" class="flex-1 cursor-pointer">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-gray-700">Humanoid Profile</span>
+                                       class="profile-radio">
+                                <label for="humanoid-profile" class="profile-content">
+                                    <div class="profile-header">
+                                        <span class="profile-name">Humanoid Profile</span>
                                     </div>
-                                    <p class="mt-1 text-sm text-gray-500">Just Human Interaction</p>
+                                    <p class="profile-description">Just Human Interaction</p>
                                 </label>
                             </div>
                         </div>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const radioButtons = document.querySelectorAll('input[name="profile"]');
-                                
-                                radioButtons.forEach(radio => {
-                                    radio.addEventListener('change', function() {
-                                        // Remove active styling from all labels
-                                        radioButtons.forEach(rb => {
-                                            const label = rb.nextElementSibling;
-                                            const titleSpan = label.querySelector('span');
-                                            const activeTag = label.querySelector('.bg-blue-100');
-                                            
-                                            titleSpan.className = 'text-sm font-medium text-gray-700';
-                                            if (activeTag) activeTag.remove();
-                                        });
-
-                                        // Add active styling to selected label
-                                        if (this.checked) {
-                                            const label = this.nextElementSibling;
-                                            const titleSpan = label.querySelector('span');
-                                            const titleDiv = label.querySelector('div');
-                                            
-                                            titleSpan.className = 'text-sm font-medium text-blue-600';
-                                            
-                                            // Add active tag
-                                            const activeTag = document.createElement('span');
-                                            activeTag.className = 'px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full';
-                                            activeTag.textContent = 'Active';
-                                            titleDiv.appendChild(activeTag);
-                                        }
-                                    });
-                                });
-                            });
-                        </script>
                     </div>
-                    <div>
-                        <h3 class="font-medium">Audio Devices</h3>
+                    <div class="info-item">
+                        <h3 class="info-label">Audio Devices</h3>
                         {% for status in device_statuses %}
                             {% if 'mic' in status.name or 'spk' in status.name %}
-                                <p class="text-sm">{{ status.name }} - {{ status.note }}</p>
+                                <p class="device-info">{{ status.name }} - {{ status.note }}</p>
                             {% endif %}
                         {% endfor %}
                     </div>
@@ -154,4 +120,40 @@
             </div>
         </div>
     </div>
+{% endblock %}
+{% block extra_head %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const radioButtons = document.querySelectorAll('input[name="profile"]');
+            
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Remove active styling from all labels
+                    radioButtons.forEach(rb => {
+                        const label = rb.nextElementSibling;
+                        const titleSpan = label.querySelector('.profile-name');
+                        const activeTag = label.querySelector('.profile-tag');
+                        
+                        titleSpan.classList.remove('active');
+                        if (activeTag) activeTag.remove();
+                    });
+
+                    // Add active styling to selected label
+                    if (this.checked) {
+                        const label = this.nextElementSibling;
+                        const titleSpan = label.querySelector('.profile-name');
+                        const titleDiv = label.querySelector('.profile-header');
+                        
+                        titleSpan.classList.add('active');
+                        
+                        // Add active tag
+                        const activeTag = document.createElement('span');
+                        activeTag.className = 'profile-tag';
+                        activeTag.textContent = 'Active';
+                        titleDiv.appendChild(activeTag);
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
