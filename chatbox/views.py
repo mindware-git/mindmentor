@@ -1,4 +1,5 @@
 import os
+import platform
 from django.shortcuts import render
 from django.http import JsonResponse
 
@@ -20,10 +21,22 @@ def auth(request):
 
 
 def robot_status(request):
-    device_statuses = DeviceStatus.objects.all()
+    # Get platform information
+    platform_info = {
+        "os": f"{platform.system()} {platform.release()}",
+        "cpu": platform.processor(),
+        "npu": "Not Available",  # This can be updated based on specific NPU detection logic
+    }
+
+    # Get software information
+    software_info = {
+        "django_version": "Don't needs to know",
+    }
 
     context = {
-        "device_statuses": device_statuses,
+        "platform": platform_info,
+        "software": software_info,
+        "device_statuses": [],  # This can be populated with actual device statuses
     }
     return render(request, "chatbox/robot_status.html", context)
 
