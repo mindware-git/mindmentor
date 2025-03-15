@@ -60,13 +60,6 @@ class Robot:
         rv = status.state
         return rv
 
-    # def set_ipynb(self):
-    #     status = RobotStatus.objects.get(id=1)
-    #     status.memory["ipynb"] = (
-    #         "chatbox/static/chatbox/mm-course/lang/eng/family/01_family.ipynb"
-    #     )
-    #     status.save()
-
     def restore_lecture_and_resume(self) -> bool:
         status = RobotStatus.objects.get(name="mindmentor")
         if status.state == "lecturer":
@@ -108,10 +101,58 @@ class Robot:
     def lecture(self):
         # restore memory
         status = RobotStatus.objects.get(name="mindmentor")
-        # ipynb = status.memory["ipynb"]
-        # code_idx = status.memory["current_lesson"]
-        # code_style = status.memory["current_code_style"]
+        ipynb = status.memory["ipynb"]
+        code_idx = status.memory["current_lesson"]
+        code_style = status.memory["current_code_style"]
         code_info = status.memory["current_code_info"]
+
+        room_group_name = "classroom"
+
+        channel_layer = get_channel_layer()
+
+        if code_style == "sof":
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {"type": "classroom_message", "message": {"type": "sof"}},
+            )
+
+            code_style = status.memory["current_code_style"] = "code"
+            status.save()
+
+            if self.stop_event.is_set():
+                return
+        elif code_style == "code":
+            try:
+                with open(ipynb) as f:
+                    notebook = read(f, as_version=4)
+            except FileNotFoundError:
+                print("Lesson file not found.")
+                return
+
+            print("return!")
+            return
+
+            # for idx, cell in enumerate(notebook.cells):
+            #     if cell.cell_type == "code":
+
+            code_style = status.memory["current_code_style"] = "eof"
+            status.save()
+
+            if self.stop_event.is_set():
+                return
+
+        elif code_style == "eof":
+            print("send eof")
+
+            # Send EOF message after processing all cells
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {"type": "classroom_message", "message": {"type": "eof"}},
+            )
+            print("Keep eof until exiplit reset")
+
+        else:
+            print("unknown block")
 
         # go to step
 

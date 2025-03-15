@@ -2,7 +2,7 @@ import os
 from django.shortcuts import render
 from django.http import JsonResponse
 
-from .robot import Robot, send_lesson_content
+from .robot import Robot, RobotStatus
 from .models import Lecture
 
 robot = Robot()
@@ -112,6 +112,11 @@ def start_lecture(request, lecture_id):
     if request.method == "GET":
         try:
             lecture = Lecture.objects.get(id=lecture_id)
+            status = RobotStatus.objects.get(name="mindmentor")
+
+            status.memory["ipynb"] = lecture.description["file_path"]
+            status.save()
+
             if robot.restore_lecture_and_resume():
                 return JsonResponse({"message": "Lecture started successfully"})
             else:
@@ -131,7 +136,8 @@ def stop_lecture(request, lecture_id):
     """Start a lecture session."""
     if request.method == "GET":
         try:
-            lecture = Lecture.objects.get(id=lecture_id)
+            # TODO: check start, stop pair
+            # lecture = Lecture.objects.get(id=lecture_id)
             if robot.save_lecture_and_exit():
                 return JsonResponse({"message": "Lecture started successfully"})
             else:
