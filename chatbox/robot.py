@@ -41,7 +41,7 @@ class Robot:
                 "memory": {
                     "ipynb": "",
                     "current_lesson": 0,
-                    "current_code_style": "",
+                    "current_code_style": "sof",
                     "current_code_info": 0,
                 },
                 "description": {
@@ -105,85 +105,133 @@ class Robot:
         code_info = status.memory["current_code_info"]
 
         room_group_name = "classroom"
-
         channel_layer = get_channel_layer()
 
-        if code_style == "sof":
-            async_to_sync(channel_layer.group_send)(
-                room_group_name,
-                {"type": "classroom_message", "message": {"type": "sof"}},
-            )
-
-            code_style = status.memory["current_code_style"] = "code"
-            status.save()
-
+        while code_style != "eof":
             if self.stop_event.is_set():
                 return
-        elif code_style == "code":
-            try:
-                with open(ipynb) as f:
-                    notebook = read(f, as_version=4)
-            except FileNotFoundError:
-                print("Lesson file not found.")
-                return
 
-            for idx, cell in enumerate(notebook.cells):
+            if code_style == "sof":
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {"type": "classroom_message", "message": {"type": "sof"}},
+                )
 
-                # jump to status.memory["current_lesson"]
-                if idx < code_idx:
-                    continue
-
-                if cell.cell_type == "code":
-                    source = cell.source
-                    if "Image(" in source:
-                        image_path = source.split('"')[1]
-                        full_image_path = (
-                            "chatbox/mm-course/lang/eng/family/" + image_path
-                        )
-                        async_to_sync(channel_layer.group_send)(
-                            room_group_name,
-                            {
-                                "type": "classroom_message",
-                                "message": {"type": "image", "path": full_image_path},
-                            },
-                        )
-                    elif "Audio(" in source:
-                        audio_path = source.split('"')[1]
-                        full_audio_path = (
-                            "chatbox/static/chatbox/mm-course/lang/eng/family/"
-                            + audio_path
-                        )
-                        # Save current lesson state before playing audio
-                        # await sync_to_async(_save_lesson_state)(notebook_path, idx)
-                        # await play_audio_async(full_audio_path)
-                    elif "print(" in source:
-                        print_text = source.split('print("')[1].split('")')[0]
-                        async_to_sync(channel_layer.group_send)(
-                            room_group_name,
-                            {
-                                "type": "classroom_message",
-                                "message": {"type": "text", "content": print_text},
-                            },
-                        )
-                    elif "clear_output(wait=True)" in source:
-                        async_to_sync(channel_layer.group_send)(
-                            room_group_name,
-                            {"type": "classroom_message", "message": {"type": "clear"}},
-                        )
-                        time.sleep(2)
-
-                status.memory["current_lesson"] = idx + 1
+                code_style = status.memory["current_code_style"] = "code"
                 status.save()
-                if self.stop_event.is_set():
+
+            elif code_style == "code":
+                try:
+                    with open(ipynb) as f:
+                        notebook = read(f, as_version=4)
+                except FileNotFoundError:
+                    print("Lesson file not found.")
                     return
 
-            code_style = status.memory["current_code_style"] = "eof"
-            status.save()
+                for idx, cell in enumerate(notebook.cells):
 
-            if self.stop_event.is_set():
-                return
+                    # jump to status.memory["current_lesson"]
+                    if idx < code_idx:
+                        continue
 
-        elif code_style == "eof":
+                    if cell.cell_type == "code":
+                        source = cell.source
+                        if "Image(" in source:
+                            image_path = source.split('"')[1]
+                            full_image_path = (
+                                "chatbox/mm-course/lang/eng/family/" + image_path
+                            )
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {
+                                        "type": "image",
+                                        "path": full_image_path,
+                                    },
+                                },
+                            )
+                        elif "Audio(" in source:
+                            audio_path = source.split('"')[1]
+                            full_audio_path = (
+                                "chatbox/static/chatbox/mm-course/lang/eng/family/"
+                                + audio_path
+                            )
+
+                            # Open the WAV file
+                            wf = wave.open(full_audio_path, "rb")
+
+                            # Create a PyAudio object
+                            p = pyaudio.PyAudio()
+
+                            # Open a stream to play the audio
+                            stream = p.open(
+                                format=p.get_format_from_width(wf.getsampwidth()),
+                                channels=wf.getnchannels(),
+                                rate=wf.getframerate(),
+                                output=True,
+                            )
+
+                            # Read data in chunks
+                            chunk_size = 1024
+                            # move wf to code_info
+                            wf.setpos(code_info * chunk_size)
+
+                            data = wf.readframes(chunk_size)
+
+                            while data:
+                                stream.write(data)
+                                code_info += 1
+                                if self.stop_event.is_set():
+                                    status = RobotStatus.objects.get(name="mindmentor")
+                                    status.memory["current_code_info"] = code_info
+                                    status.save()
+                                    return
+
+                                data = wf.readframes(chunk_size)
+
+                            status = RobotStatus.objects.get(name="mindmentor")
+                            code_info = status.memory["current_code_info"] = 0
+                            status.save()
+
+                            # Stop and close the stream
+                            stream.stop_stream()
+                            stream.close()
+                            p.terminate()
+                            wf.close()
+
+                        elif "print(" in source:
+                            print(source)
+
+                            print_text = source.split('print("')[1].split('")')[0]
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {"type": "text", "content": print_text},
+                                },
+                            )
+                        elif "clear_output(wait=True)" in source:
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {"type": "clear"},
+                                },
+                            )
+                            time.sleep(2)
+                        else:
+                            print("Unkown code block")
+
+                    status.memory["current_lesson"] = idx + 1
+                    status.save()
+                    if self.stop_event.is_set():
+                        return
+
+                code_style = status.memory["current_code_style"] = "eof"
+                status.save()
+
+        if code_style == "eof":
             print("send eof")
 
             # Send EOF message after processing all cells
@@ -194,45 +242,4 @@ class Robot:
             print("Keep eof until exiplit reset")
 
         else:
-            print("unknown block")
-
-        # go to step
-
-        # basically lecture is just play audio for now
-        # TODO: Change it to lecture
-
-        # Open the WAV file
-        wf = wave.open(self.wav_file_path, "rb")
-
-        # Create a PyAudio object
-        p = pyaudio.PyAudio()
-
-        # Open a stream to play the audio
-        stream = p.open(
-            format=p.get_format_from_width(wf.getsampwidth()),
-            channels=wf.getnchannels(),
-            rate=wf.getframerate(),
-            output=True,
-        )
-
-        # Read data in chunks
-        chunk_size = 1024
-        # move wf to code_info
-        wf.setpos(code_info * chunk_size)
-
-        data = wf.readframes(chunk_size)
-
-        while data and not self.stop_event.is_set():
-            stream.write(data)
-            code_info += 1
-            data = wf.readframes(chunk_size)
-
-        status = RobotStatus.objects.get(name="mindmentor")
-        status.memory["current_code_info"] = code_info
-        status.save()
-
-        # Stop and close the stream
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        wf.close()
+            print("unknown style")
