@@ -164,3 +164,28 @@ def stop_lecture(request, lecture_id):
             )
 
     return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+def reset_lecture(request, lecture_id):
+    """Reset a lecture session."""
+    if request.method == "GET":
+        try:
+            status = RobotStatus.objects.get(name="mindmentor")
+            if status.state != "lecturer":
+                return JsonResponse({"error": "Robot busy"}, status=500)
+            status.state = "idle"
+            status.memory["current_lesson"] = 0
+            status.memory["current_code_style"] = "sof"
+            status.memory["current_code_info"] = 0
+
+            status.save()
+            return JsonResponse({"message": "Lecture reset successfully"})
+
+        except Lecture.DoesNotExist:
+            return JsonResponse({"error": "Lecture not found"}, status=404)
+        except Exception as e:
+            return JsonResponse(
+                {"error": "Server error", "details": str(e)}, status=500
+            )
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)

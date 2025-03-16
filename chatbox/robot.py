@@ -222,6 +222,7 @@ class Robot:
                             time.sleep(2)
                         else:
                             print("Unkown code block")
+                            print(source)
 
                     status.memory["current_lesson"] = idx + 1
                     status.save()

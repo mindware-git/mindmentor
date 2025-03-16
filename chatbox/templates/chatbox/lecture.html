@@ -13,6 +13,24 @@
         // Get lecture ID from Django template context
         const lectureId = "{{ lecture.id }}";
         
+        // Setup WebSocket connection
+        const ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+        const socket = new WebSocket(
+            ws_scheme + '://' + window.location.host + '/ws/classroom/'
+        );
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+            const button = document.getElementById("modeButton");
+
+            if (message.type === "eof") {
+                button.textContent = "Reset";
+                button.classList.remove("stop");
+                button.classList.add("reset");
+            }
+        };
+
         document
             .getElementById("modeButton")
             .addEventListener("click", function () {
@@ -51,6 +69,24 @@
                     });
                     button.textContent = "Start";
                     button.classList.remove("stop");
+                } else if (currentMode === "Reset") {
+                    // Reset the lecture state
+                    fetch(`/chatbox/api/v1/lectures/${lectureId}/reset`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                        button.textContent = "Start";
+                        button.classList.remove("reset");
+                        button.classList.add("start");
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
                 }
             });
     });
