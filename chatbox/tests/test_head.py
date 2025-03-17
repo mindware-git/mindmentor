@@ -25,7 +25,7 @@ class MicrophoneTestCase(TestCase):
     def setUp(self):
         self.p = pyaudio.PyAudio()
         self.stream = self.p.open(
-            format=pyaudio.paFloat32,
+            format=pyaudio.paInt16,
             channels=1,
             rate=44100,
             input=True,
@@ -57,7 +57,7 @@ class MicrophoneTestCase(TestCase):
         # Save the recorded data as a WAV file
         wave_file = wave.open("mic_out.wav", "wb")
         wave_file.setnchannels(1)
-        wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paFloat32))
+        wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paInt16))
         wave_file.setframerate(44100)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
