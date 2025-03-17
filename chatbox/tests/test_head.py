@@ -62,6 +62,60 @@ class MicrophoneTestCase(TestCase):
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
 
+    def test_detect_VAD(self):
+        import numpy as np
+        from collections import deque
+
+        # Define the threshold for voice activity detection
+        threshold = 30  # Assuming this is a suitable threshold for your audio data
+
+        # Define window size (number of frames to keep in the sliding window)
+        window_size = 50  # This will give us roughly 5 seconds of audio (50 * 1024 samples / 44100 Hz)
+
+        # Initialize variables for recording and VAD
+        frames = []
+        audio_window = deque(maxlen=window_size)  # Sliding window for audio data
+        voice_active = False
+        voice_start_time = None
+
+        # Start recording
+        print("Recording...")
+        while True:
+            data = self.stream.read(1024)
+            frames.append(data)
+
+            # Convert the raw audio data to a numpy array
+            audio_data = np.frombuffer(data, dtype=np.int16)
+            audio_window.append(audio_data)
+
+            # Calculate RMS using only the data in the sliding window
+            if len(audio_window) == window_size:
+                window_data = np.concatenate(list(audio_window))
+                rms = np.sqrt(np.mean(window_data**2))
+                print(rms)
+
+                # Check if the RMS is above the threshold
+                if rms > threshold:
+                    if not voice_active:
+                        voice_active = True
+                        voice_start_time = time.time()
+                else:
+                    if voice_active:
+                        # If the voice has been active for more than 1 second, stop recording
+                        if time.time() - voice_start_time > 1:
+                            break
+                        voice_active = False
+
+        # Save the recorded data as a WAV file
+        wave_file = wave.open("mic_vad.wav", "wb")
+        wave_file.setnchannels(1)
+        wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paInt16))
+        wave_file.setframerate(44100)
+        wave_file.writeframes(b"".join(frames))
+        wave_file.close()
+
+        print("Recording saved as mic_vad.wav")
+
 
 @skipIf(True, reason="Enable latter with proper solution")
 class CameraTestCase(TestCase):
