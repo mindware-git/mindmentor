@@ -58,6 +58,20 @@ class Robot:
         rv = status.state
         return rv
 
+    def ta(self) -> bool:
+        status = RobotStatus.objects.get(name="mindmentor")
+        status.state = "teaching_assistant"
+        status.save()
+
+        if self.lecture_thread is None or not self.lecture_thread.is_alive():
+            self.stop_event.clear()
+            self.lecture_thread = threading.Thread(target=self.assistant)
+            self.lecture_thread.start()
+            return True
+        else:
+            print("should not be here!")
+        return False
+
     def restore_lecture_and_resume(self) -> bool:
         status = RobotStatus.objects.get(name="mindmentor")
         if status.state == "lecturer":
@@ -95,6 +109,14 @@ class Robot:
         status.state = "idle"
         status.save()
         return True
+
+    def assistant(self):
+        time.sleep(10)
+        print("TA done")
+
+        status = RobotStatus.objects.get(name="mindmentor")
+        status.state = "idle"
+        status.save()
 
     def lecture(self):
         # restore memory

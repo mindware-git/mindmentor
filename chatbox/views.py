@@ -67,10 +67,13 @@ def teachers(request):
 def ask_question(request):
     if request.method == "GET":
         robot = Robot()
-        response = robot.get_question()
-        return JsonResponse(
-            {"status": response["status"]}, status=response["status_code"]
-        )
+
+        # Check if current state is lecturer and handle transition
+        status = RobotStatus.objects.get(name="mindmentor")
+        if status.state == "lecturer":
+            robot.save_lecture_and_exit()
+        if robot.ta():
+            return JsonResponse({"status": "success"})
     return JsonResponse({"status": "failed"}, status=400)
 
 
