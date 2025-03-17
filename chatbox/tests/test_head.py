@@ -4,6 +4,10 @@ import pyaudio
 import sounddevice  # This is for mute alsa log for pyaudio
 import cv2
 
+import wave
+import time
+from gtts import gTTS
+
 
 class SpeakerTestCase(TestCase):
     def setUp(self):
@@ -13,7 +17,8 @@ class SpeakerTestCase(TestCase):
         self.p.terminate()
 
     def test_speak_hello(self):
-        self.assertEqual(1 + 1, 2)
+        speech = gTTS(text="Hello world!", slow=False)
+        speech.save("speak_hello.wav")
 
 
 class MicrophoneTestCase(TestCase):
@@ -39,6 +44,23 @@ class MicrophoneTestCase(TestCase):
         data = self.stream.read(1024)
         self.assertIsNotNone(data)
         self.assertTrue(len(data) > 0)
+
+    def test_mic_to_wav(self):
+        print("Now make sound for record")
+        # Record for 5 seconds
+        frames = []
+        start_time = time.time()
+        while time.time() - start_time < 5:
+            data = self.stream.read(1024)
+            frames.append(data)
+
+        # Save the recorded data as a WAV file
+        wave_file = wave.open("mic_out.wav", "wb")
+        wave_file.setnchannels(1)
+        wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paFloat32))
+        wave_file.setframerate(44100)
+        wave_file.writeframes(b"".join(frames))
+        wave_file.close()
 
 
 @skipIf(True, reason="Enable latter with proper solution")
