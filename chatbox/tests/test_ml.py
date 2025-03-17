@@ -56,7 +56,7 @@ class GroqTestCase(TestCase):
                     file=(filename, f.read()),
                     response_format="text",
                 )
-                print(completion.text)
+                print(completion)
             except Exception as e:
                 return f"Error in transcription: {str(e)}"
 
