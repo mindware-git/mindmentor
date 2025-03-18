@@ -191,6 +191,7 @@ class Robot:
                 return f"Error in transcription: {str(e)}"
 
         # Now llm generate answer
+        # TODO: stream API, RAG
         chat_completion = client.chat.completions.create(
             #
             # Required parameters
@@ -217,7 +218,7 @@ class Robot:
             temperature=0.5,
             # The maximum number of tokens to generate. Requests can use up to
             # 32,768 tokens shared between prompt and completion.
-            max_completion_tokens=1024,
+            max_completion_tokens=128,
             # Controls diversity via nucleus sampling: 0.5 means half of all
             # likelihood-weighted options are considered.
             top_p=1,
