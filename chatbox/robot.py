@@ -20,6 +20,8 @@ import threading
 import groq
 from django.conf import settings
 from gtts import gTTS
+from io import BytesIO
+from pydub import AudioSegment
 
 
 class Robot:
@@ -149,6 +151,8 @@ class Robot:
         p.terminate()
         wf.close()
 
+        p = pyaudio.PyAudio()
+
         # listening
         stream = p.open(
             format=pyaudio.paInt16,
@@ -187,8 +191,13 @@ class Robot:
                 return f"Error in transcription: {str(e)}"
 
         # make answer
+        # gtts only makes mp3 file
         speech = gTTS(text=completion, slow=False)
-        speech.save("answer.wav")
+        audio_fp = BytesIO()
+        speech.write_to_fp(audio_fp)
+        audio_fp.seek(0)
+        audio = AudioSegment.from_file(audio_fp, format="mp3")
+        audio.export("answer.wav", format="wav")
 
         wf = wave.open("answer.wav", "rb")
 

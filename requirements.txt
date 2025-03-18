@@ -8,3 +8,5 @@ djlint==1.36.4
 channels[daphne]==4.2.0
 nbclient==0.10.2
 gTTS==2.5.4
+pydub==0.25.1
+audioop-lts==0.2.1
