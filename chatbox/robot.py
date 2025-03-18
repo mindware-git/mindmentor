@@ -17,6 +17,9 @@ from nbformat import read
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.layers import get_channel_layer
 import threading
+import groq
+from django.conf import settings
+from gtts import gTTS
 
 
 class Robot:
@@ -111,12 +114,125 @@ class Robot:
         return True
 
     def assistant(self):
-        time.sleep(10)
+
+        # speak what's your question
+
+        # Open the WAV file
+        wf = wave.open("chatbox/res/react_sara.wav", "rb")
+
+        # Create a PyAudio object
+        p = pyaudio.PyAudio()
+
+        # Open a stream to play the audio
+        stream = p.open(
+            format=p.get_format_from_width(wf.getsampwidth()),
+            channels=wf.getnchannels(),
+            rate=wf.getframerate(),
+            output=True,
+        )
+
+        # Read data in chunks
+        chunk_size = 1024
+
+        data = wf.readframes(chunk_size)
+
+        while data:
+            stream.write(data)
+            if self.stop_event.is_set():
+                return
+
+            data = wf.readframes(chunk_size)
+
+        # Stop and close the stream
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        wf.close()
+
+        # listening
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            frames_per_buffer=1024,
+        )
+        print("Now make sound for record")
+        # Record for 5 seconds
+        frames = []
+        start_time = time.time()
+        while time.time() - start_time < 5:
+            data = stream.read(1024)
+            frames.append(data)
+
+        # Save the recorded data as a WAV file
+        wave_file = wave.open("question.wav", "wb")
+        wave_file.setnchannels(1)
+        wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wave_file.setframerate(44100)
+        wave_file.writeframes(b"".join(frames))
+        wave_file.close()
+
+        client = groq.Client(api_key=settings.GROQ_API_KEY)
+        filename = "question.wav"  # Replace with the path to your audio file
+        with open(filename, "rb") as f:
+            try:
+                completion = client.audio.transcriptions.create(
+                    model="distil-whisper-large-v3-en",
+                    file=(filename, f.read()),
+                    response_format="text",
+                )
+                print(completion)
+            except Exception as e:
+                return f"Error in transcription: {str(e)}"
+
+        # make answer
+        speech = gTTS(text=completion, slow=False)
+        speech.save("answer.wav")
+
+        wf = wave.open("answer.wav", "rb")
+
+        stream = p.open(
+            format=p.get_format_from_width(wf.getsampwidth()),
+            channels=wf.getnchannels(),
+            rate=wf.getframerate(),
+            output=True,
+        )
+
+        # Read data in chunks
+        chunk_size = 1024
+
+        data = wf.readframes(chunk_size)
+
+        while data:
+            stream.write(data)
+            if self.stop_event.is_set():
+                return
+
+            data = wf.readframes(chunk_size)
+
+        # Stop and close the stream
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        wf.close()
+
         print("TA done")
+
+    def stop_ta(self):
+        if self.lecture_thread and self.lecture_thread.is_alive():
+            self.stop_event.set()
+        else:
+            print("Lecture thread is not running.")
+
+        # Wait for the thread to finish
+        if self.lecture_thread:
+            self.lecture_thread.join()  # Wait for the thread to finish
 
         status = RobotStatus.objects.get(name="mindmentor")
         status.state = "idle"
         status.save()
+        return True
 
     def lecture(self):
         # restore memory

@@ -33,3 +33,20 @@ class LecturerTestCase(TransactionTestCase):
         self.robot.restore_lecture_and_resume()
         self.assertEqual(self.robot.get_state(), "lecturer")
         time.sleep(6)
+
+
+class TeachingAssistantTestCase(TransactionTestCase):
+    def setUp(self):
+        self.robot = Robot()
+        self.robot.init_db()
+
+    def test_start_ta(self):
+        self.robot.ta()
+        time.sleep(10)
+
+    def test_stop_ta(self):
+        self.robot.ta()
+        time.sleep(2)
+
+        self.robot.stop_ta()
+        time.sleep(2)
