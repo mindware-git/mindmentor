@@ -84,7 +84,7 @@ class Robot:
     def restore_lecture_and_resume(self) -> bool:
         status = RobotStatus.objects.get(name="mindmentor")
         if status.state != "idle":
-            print("Not idle so can not jump to lectuerer")
+            print("Not idle so can not jump to lecturer")
             return False
 
         status.state = "lecturer"
@@ -255,7 +255,7 @@ class Robot:
         status.state = "idle"
         status.save()
 
-        # TODO: check previous state and if lectuerer then jump to lecture
+        # TODO: check previous state and if lecturer then jump to lecture
 
     def stop_ta(self):
         if self.lecture_thread and self.lecture_thread.is_alive():
