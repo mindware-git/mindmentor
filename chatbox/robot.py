@@ -115,45 +115,8 @@ class Robot:
         status.save()
         return True
 
-    def assistant(self):
-
-        # speak what's your question
-
-        # Open the WAV file
-        wf = wave.open("chatbox/res/react_sara.wav", "rb")
-
-        # Create a PyAudio object
+    def listen_to_wav(self, wav_file_path, record_second=5):
         p = pyaudio.PyAudio()
-
-        # Open a stream to play the audio
-        stream = p.open(
-            format=p.get_format_from_width(wf.getsampwidth()),
-            channels=wf.getnchannels(),
-            rate=wf.getframerate(),
-            output=True,
-        )
-
-        # Read data in chunks
-        chunk_size = 1024
-
-        data = wf.readframes(chunk_size)
-
-        while data:
-            stream.write(data)
-            if self.stop_event.is_set():
-                return
-
-            data = wf.readframes(chunk_size)
-
-        # Stop and close the stream
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        wf.close()
-
-        p = pyaudio.PyAudio()
-
-        # listening
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
@@ -165,17 +128,53 @@ class Robot:
         # Record for 5 seconds
         frames = []
         start_time = time.time()
-        while time.time() - start_time < 5:
+        while time.time() - start_time < record_second:
             data = stream.read(1024)
             frames.append(data)
 
         # Save the recorded data as a WAV file
-        wave_file = wave.open("question.wav", "wb")
-        wave_file.setnchannels(1)
-        wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-        wave_file.setframerate(44100)
-        wave_file.writeframes(b"".join(frames))
-        wave_file.close()
+        with wave.open(wav_file_path, "wb") as wave_file:
+            wave_file.setnchannels(1)
+            wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+            wave_file.setframerate(44100)
+            wave_file.writeframes(b"".join(frames))
+            wave_file.close()
+        p.terminate()
+
+    def speak_from_wav(self, wav_file_path):
+        with wave.open(wav_file_path, "rb") as wf:
+            p = pyaudio.PyAudio()
+            # Open a stream to play the audio
+            stream = p.open(
+                format=p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True,
+            )
+
+            # Read data in chunks
+            chunk_size = 1024
+
+            data = wf.readframes(chunk_size)
+
+            while data:
+                stream.write(data)
+                if self.stop_event.is_set():
+                    return
+
+                data = wf.readframes(chunk_size)
+
+            # Stop and close the stream
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+
+    def assistant(self):
+
+        # speak what's your question
+        self.speak_from_wav("chatbox/res/react_sara.wav")
+
+        self.listen_to_wav("question.wav")
 
         client = groq.Client(api_key=settings.GROQ_API_KEY)
         filename = "question.wav"  # Replace with the path to your audio file
@@ -244,32 +243,7 @@ class Robot:
         audio = AudioSegment.from_file(audio_fp, format="mp3")
         audio.export("answer.wav", format="wav")
 
-        wf = wave.open("answer.wav", "rb")
-
-        stream = p.open(
-            format=p.get_format_from_width(wf.getsampwidth()),
-            channels=wf.getnchannels(),
-            rate=wf.getframerate(),
-            output=True,
-        )
-
-        # Read data in chunks
-        chunk_size = 1024
-
-        data = wf.readframes(chunk_size)
-
-        while data:
-            stream.write(data)
-            if self.stop_event.is_set():
-                return
-
-            data = wf.readframes(chunk_size)
-
-        # Stop and close the stream
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        wf.close()
+        self.speak_from_wav("answer.wav")
 
         print("TA done")
 
