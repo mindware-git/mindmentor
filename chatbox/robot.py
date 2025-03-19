@@ -174,7 +174,6 @@ class Robot:
             p.terminate()
 
     def assistant(self):
-
         # speak what's your question
         self.speak_from_wav("chatbox/res/react_sara.wav")
 
@@ -252,10 +251,17 @@ class Robot:
         print("TA done")
 
         status = RobotStatus.objects.get(name="mindmentor")
-        status.state = "idle"
+        prev_state = status.memory["prev_state"]
+        if prev_state == "idle":
+            status.state = "idle"
+        else:
+            status.state = "lecturer"
+        status.memory["prev_state"] = "idle"
         status.save()
 
-        # TODO: check previous state and if lecturer then jump to lecture
+        # Check previous state and if lecturer then jump to lecture
+        if prev_state == "lecturer":
+            self.lecture()
 
     def stop_ta(self):
         if self.lecture_thread and self.lecture_thread.is_alive():
