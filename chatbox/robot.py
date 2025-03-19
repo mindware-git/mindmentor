@@ -65,6 +65,9 @@ class Robot:
 
     def ta(self) -> bool:
         status = RobotStatus.objects.get(name="mindmentor")
+        if status.state != "idle":
+            print("Not idle so can not jump to TA")
+            return False
         status.state = "teaching_assistant"
         status.save()
 
@@ -79,8 +82,8 @@ class Robot:
 
     def restore_lecture_and_resume(self) -> bool:
         status = RobotStatus.objects.get(name="mindmentor")
-        if status.state == "lecturer":
-            print("Already lecturing")
+        if status.state != "idle":
+            print("Not idle so can not jump to lectuerer")
             return False
 
         status.state = "lecturer"
@@ -217,7 +220,7 @@ class Robot:
             temperature=0.5,
             # The maximum number of tokens to generate. Requests can use up to
             # 32,768 tokens shared between prompt and completion.
-            max_completion_tokens=128,
+            max_completion_tokens=64,
             # Controls diversity via nucleus sampling: 0.5 means half of all
             # likelihood-weighted options are considered.
             top_p=1,
