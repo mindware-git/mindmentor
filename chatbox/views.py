@@ -70,8 +70,11 @@ def ask_question(request):
 
         # Check if current state is lecturer and handle transition
         status = RobotStatus.objects.get(name="mindmentor")
+        prev_state = status.state
         if status.state == "lecturer":
             robot.save_lecture_and_exit()
+        status.memory["prev_state"] = prev_state
+        status.save()
         if robot.ta():
             return JsonResponse({"status": "success"})
     return JsonResponse({"status": "failed"}, status=400)

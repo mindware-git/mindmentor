@@ -44,6 +44,7 @@ class Robot:
                 "state": "idle",
                 "device": {},
                 "memory": {
+                    "prev_state": "idle",
                     "ipynb": "",
                     "current_lesson": 0,
                     "current_code_style": "sof",
@@ -249,6 +250,12 @@ class Robot:
         self.speak_from_wav("answer.wav")
 
         print("TA done")
+
+        status = RobotStatus.objects.get(name="mindmentor")
+        status.state = "idle"
+        status.save()
+
+        # TODO: check previous state and if lectuerer then jump to lecture
 
     def stop_ta(self):
         if self.lecture_thread and self.lecture_thread.is_alive():
