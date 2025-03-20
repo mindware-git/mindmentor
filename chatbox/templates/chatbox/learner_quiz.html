@@ -19,12 +19,23 @@
                  alt="No image available"
                  width="600"
                  height="400">
+            <div class="nav-buttons-container">
+                <button id="prevButton" class="nav-button">←</button>
+                <button id="nextButton" class="nav-button">→</button>
+            </div>
         </div>
         <!-- Text area at the bottom -->
         <div id="textArea" class="text-area"></div>
     </div>
 {% endblock %}
 {% block extra_head %}
+    <style>
+        .nav-buttons-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+    </style>
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         document
@@ -84,12 +95,24 @@
         function updateImage() {
             if (images.length > 0) {
                 document.getElementById("currentImage").src = images[imageIndex];
-                imageIndex = (imageIndex + 1) % images.length;
-                setTimeout(updateImage, 3000); // Change image every 3 seconds
             } else {
                 document.getElementById("currentImage").src = "";
             }
         }
+
+        document.getElementById("prevButton").addEventListener("click", function() {
+            if (images.length > 0) {
+                imageIndex = (imageIndex - 1 + images.length) % images.length;
+                updateImage();
+            }
+        });
+
+        document.getElementById("nextButton").addEventListener("click", function() {
+            if (images.length > 0) {
+                imageIndex = (imageIndex + 1) % images.length;
+                updateImage();
+            }
+        });
 
         socket.onopen = function(e) {
             console.log("WebSocket connection established");
