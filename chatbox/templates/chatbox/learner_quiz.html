@@ -3,16 +3,25 @@
 {% block title %}Learner's Page{% endblock %}
 {% block content %}
     <div class="quiz-container">
+        <!-- Status area at top left -->
+        <div class="status-area">
+            <h1 class="status-title">Status: Waiting for class...</h1>
+        </div>
         <!-- Ask button positioned at top right -->
         <div class="ask-button-container">
             <button id="askButton" class="ask-button">Ask</button>
         </div>
-        <h1 class="page-title">Hello!</h1>
-        <div id="content" class="content-area"></div>
-        <!-- Blackboard style card for quiz -->
-        <div id="blackboard" class="blackboard">
-            <h1 class="blackboard-title">Waiting for class...</h1>
+        <!-- Picture area in the middle -->
+        <div id="pictureArea" class="picture-area">
+            <img id="currentImage"
+                 class="content-image"
+                 src=""
+                 alt="No image available"
+                 width="600"
+                 height="400">
         </div>
+        <!-- Text area at the bottom -->
+        <div id="textArea" class="text-area"></div>
     </div>
 {% endblock %}
 {% block extra_head %}
@@ -38,6 +47,8 @@
             });
 
         const socket = new WebSocket("ws://" + window.location.host + "/ws/classroom/");
+        let imageIndex = 0;
+        let images = [];
 
         socket.onmessage = function(e) {
             const data = JSON.parse(e.data);
@@ -46,30 +57,39 @@
             console.log("Received message:", message);
             
             if (typeof message === 'object') {
-                document.getElementById("blackboard").querySelector("h1").textContent = "Received: " + message.type + " content";
+                document.querySelector(".status-title").textContent = "Received: " + message.type + " content";
             } else {
-                document.getElementById("blackboard").querySelector("h1").textContent = "Count: " + message;
+                document.querySelector(".status-title").textContent = "Count: " + message;
             }
 
             if (message.type === "sof") {
-                document.getElementById("blackboard").querySelector("h1").textContent = "Start classroom";
+                document.querySelector(".status-title").textContent = "Start classroom";
             } else if (message.type === "eof") {
-                document.getElementById("blackboard").querySelector("h1").textContent = "End of classroom";
+                document.querySelector(".status-title").textContent = "End of classroom";
             } else if (message.type === "image") {
-                const img = document.createElement("img");
-                img.src = "{% get_static_prefix %}" + message.path;
-                console.log("Image path:", img.src);
-                img.className = "content-image";
-                document.getElementById("content").appendChild(img);
+                images.push("{% get_static_prefix %}" + message.path);
+                updateImage();
             } else if (message.type === "text") {
                 const textElement = document.createElement("p");
                 textElement.textContent = message.content;
                 textElement.className = "content-text";
-                document.getElementById("content").appendChild(textElement);
+                document.getElementById("textArea").appendChild(textElement);
             } else if (message.type === "clear") {
-                document.getElementById("content").innerHTML = "";
+                document.getElementById("textArea").innerHTML = "";
+                images = [];
+                updateImage();
             }
         };
+
+        function updateImage() {
+            if (images.length > 0) {
+                document.getElementById("currentImage").src = images[imageIndex];
+                imageIndex = (imageIndex + 1) % images.length;
+                setTimeout(updateImage, 3000); // Change image every 3 seconds
+            } else {
+                document.getElementById("currentImage").src = "";
+            }
+        }
 
         socket.onopen = function(e) {
             console.log("WebSocket connection established");
