@@ -7,21 +7,27 @@ Also robot will send message to client using websocket.
 Status is maintained in database so that it can be accessed by multiple.
 """
 
+import os
+from collections import deque
 import time
 import wave
-import pyaudio
-import asyncio
-import sounddevice
-from .models import RobotStatus
-from nbformat import read
-from asgiref.sync import sync_to_async, async_to_sync
-from channels.layers import get_channel_layer
 import threading
-import groq
-from django.conf import settings
+
 from gtts import gTTS
 from io import BytesIO
 from pydub import AudioSegment
+import numpy as np
+import nbformat
+from nbclient import NotebookClient
+import pyaudio
+import sounddevice
+import groq
+
+from django.conf import settings
+from asgiref.sync import sync_to_async, async_to_sync
+from channels.layers import get_channel_layer
+
+from .models import RobotStatus
 
 
 class Robot:
@@ -37,12 +43,11 @@ class Robot:
         self.wav_file_path = "chatbox/res/lecture1.wav"
 
     def init_db(self):
-        """Initialize the robot status in the database if it doesn't exist."""
-        robot_status, created = RobotStatus.objects.get_or_create(
+        robot_status, created = RobotStatus.objects.update_or_create(
             name="mindmentor",
             defaults={
                 "state": "idle",
-                "device": {},
+                "device": {"servo": False},
                 "memory": {
                     "prev_state": "idle",
                     "ipynb": "",
@@ -54,9 +59,12 @@ class Robot:
                     "version": "1.0",
                     "capabilities": ["voice_interaction"],
                     "profile": "voice",
+                    "local_llm": True,
                 },
             },
         )
+        if not created:
+            print("Robot status already exists.")
 
     def get_state(self) -> str:
         rv = ""
@@ -108,7 +116,7 @@ class Robot:
         if self.lecture_thread and self.lecture_thread.is_alive():
             self.stop_event.set()
         else:
-            print("Lecture thread is not running.")
+            print("save_lecture_and_exit : Lecture thread is not running.")
 
         # Wait for the thread to finish
         if self.lecture_thread:
@@ -118,6 +126,54 @@ class Robot:
         status.state = "idle"
         status.save()
         return True
+
+    def ved_listen_to_wav(self, wav_file_path, ved_second=3):
+        """
+        Voice Endpointing Detection
+        when silence current_value 156957 ~ 641132
+        TODO: VAD should combinate with this to remove ask button.
+        """
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            frames_per_buffer=1024,
+        )
+        print("Now make sound for record")
+
+        # 1024 samples / 44100 Hz
+        window_size = ved_second * 44100 // 1024
+
+        frames = []
+        more_than_slience = 641132
+        threshold = more_than_slience * window_size
+
+        audio_window = deque(maxlen=window_size)  # Sliding window for audio data
+        audio_window.extend([more_than_slience * 10] * audio_window.maxlen)
+        window_value = more_than_slience * 10 * window_size
+
+        while True:
+            data = stream.read(1024)
+            frames.append(data)
+
+            current_value = np.sum(np.abs(np.frombuffer(data, dtype=np.int16)))
+            last_value = audio_window.popleft()
+            audio_window.append(current_value)
+            window_value = window_value + current_value - last_value
+            # print(current_value, last_value, window_value, threshold)
+
+            if window_value < threshold:
+                break
+
+        # Save the recorded data as a WAV file
+        wave_file = wave.open(wav_file_path, "wb")
+        wave_file.setnchannels(1)
+        wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wave_file.setframerate(44100)
+        wave_file.writeframes(b"".join(frames))
+        wave_file.close()
 
     def listen_to_wav(self, wav_file_path, record_second=5):
         p = pyaudio.PyAudio()
@@ -177,80 +233,11 @@ class Robot:
         # speak what's your question
         self.speak_from_wav("chatbox/res/react_sara.wav")
 
-        self.listen_to_wav("question.wav")
-
-        client = groq.Client(api_key=settings.GROQ_API_KEY)
-        filename = "question.wav"  # Replace with the path to your audio file
-        with open(filename, "rb") as f:
-            try:
-                completion = client.audio.transcriptions.create(
-                    model="distil-whisper-large-v3-en",
-                    file=(filename, f.read()),
-                    response_format="text",
-                )
-                print(completion)
-            except Exception as e:
-                return f"Error in transcription: {str(e)}"
-
-        # Now llm generate answer
-        # TODO: stream API, RAG
-        chat_completion = client.chat.completions.create(
-            #
-            # Required parameters
-            #
-            messages=[
-                # Set an optional system message. This sets the behavior of the
-                # assistant and can be used to provide specific instructions for
-                # how it should behave throughout the conversation.
-                {"role": "system", "content": "you are a helpful class teacher."},
-                # Set a user message for the assistant to respond to.
-                {
-                    "role": "user",
-                    "content": completion,
-                },
-            ],
-            # The language model which will generate the completion.
-            model="llama-3.3-70b-versatile",
-            #
-            # Optional parameters
-            #
-            # Controls randomness: lowering results in less random completions.
-            # As the temperature approaches zero, the model will become deterministic
-            # and repetitive.
-            temperature=0.5,
-            # The maximum number of tokens to generate. Requests can use up to
-            # 32,768 tokens shared between prompt and completion.
-            max_completion_tokens=64,
-            # Controls diversity via nucleus sampling: 0.5 means half of all
-            # likelihood-weighted options are considered.
-            top_p=1,
-            # A stop sequence is a predefined or user-specified text string that
-            # signals an AI to stop generating content, ensuring its responses
-            # remain focused and concise. Examples include punctuation marks and
-            # markers like "[end]".
-            stop=None,
-            # If set, partial message deltas will be sent.
-            stream=False,
-        )
-
-        # Print the completion returned by the LLM.
-        answer = chat_completion.choices[0].message.content
-        print(answer)
-
-        # make answer
-        # gtts only makes mp3 file
-        speech = gTTS(text=answer, slow=False)
-        audio_fp = BytesIO()
-        speech.write_to_fp(audio_fp)
-        audio_fp.seek(0)
-        audio = AudioSegment.from_file(audio_fp, format="mp3")
-        audio.export("answer.wav", format="wav")
-
-        self.speak_from_wav("answer.wav")
-
-        print("TA done")
+        # self.listen_to_wav("question.wav")
+        self.ved_listen_to_wav("question.wav")
 
         status = RobotStatus.objects.get(name="mindmentor")
+        local_llm = status.description["local_llm"]
         prev_state = status.memory["prev_state"]
         if prev_state == "idle":
             status.state = "idle"
@@ -258,6 +245,80 @@ class Robot:
             status.state = "lecturer"
         status.memory["prev_state"] = "idle"
         status.save()
+
+        if local_llm:
+            self.speak_from_wav("question.wav")
+        else:
+            client = groq.Client(api_key=settings.GROQ_API_KEY)
+            filename = "question.wav"  # Replace with the path to your audio file
+            with open(filename, "rb") as f:
+                try:
+                    completion = client.audio.transcriptions.create(
+                        model="distil-whisper-large-v3-en",
+                        file=(filename, f.read()),
+                        response_format="text",
+                    )
+                    print(completion)
+                except Exception as e:
+                    return f"Error in transcription: {str(e)}"
+
+            # Now llm generate answer
+            # TODO: stream API, RAG
+            chat_completion = client.chat.completions.create(
+                #
+                # Required parameters
+                #
+                messages=[
+                    # Set an optional system message. This sets the behavior of the
+                    # assistant and can be used to provide specific instructions for
+                    # how it should behave throughout the conversation.
+                    {"role": "system", "content": "you are a helpful class teacher."},
+                    # Set a user message for the assistant to respond to.
+                    {
+                        "role": "user",
+                        "content": completion,
+                    },
+                ],
+                # The language model which will generate the completion.
+                model="llama-3.3-70b-versatile",
+                #
+                # Optional parameters
+                #
+                # Controls randomness: lowering results in less random completions.
+                # As the temperature approaches zero, the model will become deterministic
+                # and repetitive.
+                temperature=0.5,
+                # The maximum number of tokens to generate. Requests can use up to
+                # 32,768 tokens shared between prompt and completion.
+                max_completion_tokens=64,
+                # Controls diversity via nucleus sampling: 0.5 means half of all
+                # likelihood-weighted options are considered.
+                top_p=1,
+                # A stop sequence is a predefined or user-specified text string that
+                # signals an AI to stop generating content, ensuring its responses
+                # remain focused and concise. Examples include punctuation marks and
+                # markers like "[end]".
+                stop=None,
+                # If set, partial message deltas will be sent.
+                stream=False,
+            )
+
+            # Print the completion returned by the LLM.
+            answer = chat_completion.choices[0].message.content
+            print(answer)
+
+            # make answer
+            # gtts only makes mp3 file
+            speech = gTTS(text=answer, slow=False)
+            audio_fp = BytesIO()
+            speech.write_to_fp(audio_fp)
+            audio_fp.seek(0)
+            audio = AudioSegment.from_file(audio_fp, format="mp3")
+            audio.export("answer.wav", format="wav")
+
+            self.speak_from_wav("answer.wav")
+
+        print("TA done")
 
         # Check previous state and if lecturer then jump to lecture
         if prev_state == "lecturer":
@@ -305,10 +366,15 @@ class Robot:
             elif code_style == "code":
                 try:
                     with open(ipynb) as f:
-                        notebook = read(f, as_version=4)
+                        notebook = nbformat.read(f, as_version=4)
                 except FileNotFoundError:
                     print("Lesson file not found.")
                     return
+
+                ipynb_prefix = ipynb.split(os.sep)[:-1]
+                static_prefix = ipynb_prefix[2:]
+                ipynb_dir = os.path.join(*ipynb_prefix)
+                static_dir = os.path.join(*static_prefix)
 
                 for idx, cell in enumerate(notebook.cells):
 
@@ -320,9 +386,7 @@ class Robot:
                         source = cell.source
                         if "Image(" in source:
                             image_path = source.split('"')[1]
-                            full_image_path = (
-                                "chatbox/mm-course/lang/eng/family/" + image_path
-                            )
+                            full_image_path = os.path.join(static_dir, image_path)
                             async_to_sync(channel_layer.group_send)(
                                 room_group_name,
                                 {
@@ -335,10 +399,15 @@ class Robot:
                             )
                         elif "Audio(" in source:
                             audio_path = source.split('"')[1]
-                            full_audio_path = (
-                                "chatbox/static/chatbox/mm-course/lang/eng/family/"
-                                + audio_path
-                            )
+                            full_audio_path = os.path.join(ipynb_dir, audio_path)
+
+                            # if audio extension is mp3
+                            if full_audio_path.endswith(".mp3"):
+                                audio = AudioSegment.from_file(
+                                    full_audio_path, format="mp3"
+                                )
+                                audio.export("lesson.wav", format="wav")
+                                full_audio_path = "lesson.wav"
 
                             # Open the WAV file
                             wf = wave.open(full_audio_path, "rb")
@@ -383,9 +452,11 @@ class Robot:
                             wf.close()
 
                         elif "print(" in source:
-                            print(source)
+                            assert (
+                                cell.outputs is not None and len(cell.outputs) > 0
+                            ), "ipynb should executed all"
+                            print_text = cell.outputs[0].text
 
-                            print_text = source.split('print("')[1].split('")')[0]
                             async_to_sync(channel_layer.group_send)(
                                 room_group_name,
                                 {

@@ -80,15 +80,16 @@
             } else if (message.type === "image") {
                 images.push("{% get_static_prefix %}" + message.path);
                 updateImage();
+                imageIndex++;
             } else if (message.type === "text") {
                 const textElement = document.createElement("p");
                 textElement.textContent = message.content;
                 textElement.className = "content-text";
                 document.getElementById("textArea").appendChild(textElement);
             } else if (message.type === "clear") {
-                document.getElementById("textArea").innerHTML = "";
-                images = [];
-                updateImage();
+                // block clear for now
+                // document.getElementById("textArea").innerHTML = "";
+                // images = [];
             }
         };
 

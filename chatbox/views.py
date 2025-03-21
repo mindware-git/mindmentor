@@ -66,15 +66,15 @@ def teachers(request):
 
 def ask_question(request):
     if request.method == "GET":
-        robot = Robot()
-
         # Check if current state is lecturer and handle transition
         status = RobotStatus.objects.get(name="mindmentor")
         prev_state = status.state
         if status.state == "lecturer":
             robot.save_lecture_and_exit()
-        status.memory["prev_state"] = prev_state
-        status.save()
+
+        status_stop = RobotStatus.objects.get(name="mindmentor")
+        status_stop.memory["prev_state"] = prev_state
+        status_stop.save()
         if robot.ta():
             return JsonResponse({"status": "success"})
     return JsonResponse({"status": "failed"}, status=400)
@@ -179,12 +179,7 @@ def reset_lecture(request, lecture_id):
             status = RobotStatus.objects.get(name="mindmentor")
             if status.state != "lecturer":
                 return JsonResponse({"error": "Robot busy"}, status=500)
-            status.state = "idle"
-            status.memory["current_lesson"] = 0
-            status.memory["current_code_style"] = "sof"
-            status.memory["current_code_info"] = 0
-
-            status.save()
+            robot.init_db()
             return JsonResponse({"message": "Lecture reset successfully"})
 
         except Lecture.DoesNotExist:

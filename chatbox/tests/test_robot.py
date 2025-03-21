@@ -11,6 +11,9 @@ class StateTestCase(TestCase):
     def test_idle(self):
         self.assertEqual(self.robot.get_state(), "idle")
 
+    def test_ved_listen(self):
+        self.robot.ved_listen_to_wav("test.wav")
+
 
 class LecturerTestCase(TransactionTestCase):
     def setUp(self):
