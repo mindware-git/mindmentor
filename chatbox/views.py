@@ -89,7 +89,7 @@ def home(request):
     if os.path.exists(course_dir):
         for root, dirs, files in os.walk(course_dir):
             for file in files:
-                if file.endswith(".ipynb"):
+                if file.endswith("run.ipynb"):
                     # Extract course name from directory path
                     course_path = os.path.relpath(root, course_dir)
                     course_name = (
