@@ -29,6 +29,13 @@ from channels.layers import get_channel_layer
 
 from .models import RobotStatus
 
+try:
+    from rpi_hardware_pwm import HardwarePWM
+
+    RPI5_AVAILABLE = True
+except ImportError:
+    RPI5_AVAILABLE = False
+
 
 class Robot:
     """
@@ -147,6 +154,7 @@ class Robot:
         window_size = ved_second * 44100 // 1024
 
         frames = []
+        # 50938 on mac
         more_than_slience = 641132
         threshold = more_than_slience * window_size
 
@@ -230,6 +238,12 @@ class Robot:
             p.terminate()
 
     def assistant(self):
+
+        if RPI5_AVAILABLE:
+            pwm = HardwarePWM(pwm_channel=2, hz=50, chip=2)
+            pwm.start(7.5)
+            pwm.change_duty_cycle(12)
+
         # speak what's your question
         self.speak_from_wav("chatbox/res/react_sara.wav")
 
@@ -319,6 +333,9 @@ class Robot:
             self.speak_from_wav("answer.wav")
 
         print("TA done")
+
+        if RPI5_AVAILABLE:
+            pwm.change_duty_cycle(7.5)
 
         # Check previous state and if lecturer then jump to lecture
         if prev_state == "lecturer":
