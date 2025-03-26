@@ -22,6 +22,7 @@ from nbclient import NotebookClient
 import pyaudio
 import sounddevice
 import groq
+import tomllib
 
 from django.conf import settings
 from asgiref.sync import sync_to_async, async_to_sync
@@ -35,6 +36,20 @@ try:
     RPI5_AVAILABLE = True
 except ImportError:
     RPI5_AVAILABLE = False
+
+
+class Mindbot:
+
+    def __init__(self):
+        self.stop_event = threading.Event()
+
+    def boot(self):
+        """
+        This bring system fixed configuration.
+        All file configuration must be load and not other place.
+        Instead of here, please make things on run-time.
+        """
+        self.silence_minmax = None
 
 
 class Robot:
