@@ -27,7 +27,7 @@ class MicrophoneTestCase(TestCase):
         self.stream = self.p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
@@ -58,7 +58,7 @@ class MicrophoneTestCase(TestCase):
         wave_file = wave.open("mic_out.wav", "wb")
         wave_file.setnchannels(1)
         wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paInt16))
-        wave_file.setframerate(44100)
+        wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
 
@@ -70,7 +70,7 @@ class MicrophoneTestCase(TestCase):
         threshold = 30  # Assuming this is a suitable threshold for your audio data
 
         # Define window size (number of frames to keep in the sliding window)
-        window_size = 50  # This will give us roughly 5 seconds of audio (50 * 1024 samples / 44100 Hz)
+        window_size = 50  # This will give us roughly 5 seconds of audio (50 * 1024 samples / 48000 Hz)
 
         # Initialize variables for recording and VAD
         frames = []
@@ -110,7 +110,7 @@ class MicrophoneTestCase(TestCase):
         wave_file = wave.open("mic_vad.wav", "wb")
         wave_file.setnchannels(1)
         wave_file.setsampwidth(self.p.get_sample_size(pyaudio.paInt16))
-        wave_file.setframerate(44100)
+        wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
 

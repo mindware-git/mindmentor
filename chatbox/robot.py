@@ -97,7 +97,7 @@ class Mindbot:
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
@@ -127,15 +127,15 @@ class Mindbot:
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
 
         print("Detecting voice activity...")
 
-        # 1024 samples / 44100 Hz
-        window_size = vad_second * 44100 // 1024
+        # 1024 samples / 48000 Hz
+        window_size = vad_second * 48000 // 1024
 
         frames = []
         less_than_speak = self.silence_minmax[1] * 4
@@ -153,14 +153,14 @@ class Mindbot:
             last_value = audio_window.popleft()
             audio_window.append(current_value)
             window_value = window_value + current_value - last_value
-            # print(current_value, last_value, window_value, threshold)
+            print(current_value, last_value, window_value, threshold)
 
             if window_value > threshold:
                 break
         print("Voice detected")
         self.vad_event.set()
 
-    def ved_listen_to_wav(self, wav_file_path, ved_second=3):
+    def ved_listen_to_wav(self, wav_file_path, ved_second=10):
         """
         Voice Endpointing Detection
         """
@@ -168,14 +168,14 @@ class Mindbot:
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
         print("Now make sound for record")
 
-        # 1024 samples / 44100 Hz
-        window_size = ved_second * 44100 // 1024
+        # 1024 samples / 48000 Hz
+        window_size = ved_second * 48000 // 1024
 
         frames = []
         # 50938 on mac
@@ -203,7 +203,7 @@ class Mindbot:
         wave_file = wave.open(wav_file_path, "wb")
         wave_file.setnchannels(1)
         wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-        wave_file.setframerate(44100)
+        wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
 
@@ -315,14 +315,14 @@ class Robot:
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
         print("Now make sound for record")
 
-        # 1024 samples / 44100 Hz
-        window_size = ved_second * 44100 // 1024
+        # 1024 samples / 48000 Hz
+        window_size = ved_second * 48000 // 1024
 
         frames = []
         # 50938 on mac
@@ -350,7 +350,7 @@ class Robot:
         wave_file = wave.open(wav_file_path, "wb")
         wave_file.setnchannels(1)
         wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-        wave_file.setframerate(44100)
+        wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
 
@@ -359,7 +359,7 @@ class Robot:
         stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=48000,
             input=True,
             frames_per_buffer=1024,
         )
@@ -375,7 +375,7 @@ class Robot:
         with wave.open(wav_file_path, "wb") as wave_file:
             wave_file.setnchannels(1)
             wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-            wave_file.setframerate(44100)
+            wave_file.setframerate(48000)
             wave_file.writeframes(b"".join(frames))
             wave_file.close()
         p.terminate()
