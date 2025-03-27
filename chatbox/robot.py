@@ -118,6 +118,37 @@ class Mindbot:
         print(minmax)
         return minmax
 
+    def webrtc_vad(self):
+        import webrtcvad
+        import pyaudio
+        import os
+
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=48000,
+            input=True,
+            frames_per_buffer=1024,
+        )
+
+        p = pyaudio.PyAudio()
+        vad = webrtcvad.Vad(0)
+
+        frames = []
+        print("start...")
+        while True:
+            data = stream.read(int(48000 / 100))
+            is_speech = vad.is_speech(data, sample_rate=48000)
+            if is_speech:
+                frames.append(data)
+            else:
+                break
+        print("end...")
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
     def voice_activity_detection(self, vad_second=2):
 
         self.vad_event.clear()
