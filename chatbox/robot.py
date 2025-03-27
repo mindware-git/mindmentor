@@ -12,6 +12,7 @@ from collections import deque
 import time
 import wave
 import threading
+import sys
 
 from gtts import gTTS
 from io import BytesIO
@@ -41,7 +42,12 @@ except ImportError:
 class Mindbot:
 
     def __init__(self):
+        self.lock = threading.Lock()
+        self.state = ["Idle"]
+
         self.stop_event = threading.Event()
+        self.vad_thread = None
+        self.vad_event = threading.Event()
 
     def boot(self):
         """
@@ -49,7 +55,157 @@ class Mindbot:
         All file configuration must be load and not other place.
         Instead of here, please make things on run-time.
         """
-        self.silence_minmax = None
+
+        with open("mindbot.toml", "rb") as f:
+            data = tomllib.load(f)
+        # self.measure_silence()
+        self.silence_minmax = data["silence"]
+
+    def speak_from_wav(self, wav_file_path, sector=0) -> int:
+        with wave.open(wav_file_path, "rb") as wf:
+            p = pyaudio.PyAudio()
+            # Open a stream to play the audio
+            stream = p.open(
+                format=p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True,
+            )
+
+            # Read data in chunks
+            chunk_size = 1024
+            wf.setpos(sector * chunk_size)
+            data = wf.readframes(chunk_size)
+
+            while data:
+                stream.write(data)
+                sector += 1
+                if self.stop_event.is_set():
+                    return sector
+
+                data = wf.readframes(chunk_size)
+
+            # Stop and close the stream
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+
+        return 0
+
+    def measure_silence(self):
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            frames_per_buffer=1024,
+        )
+        print("Please keep quite for 5 seconds")
+        min_v = sys.maxsize
+        max_v = 0
+
+        start_time = time.time()
+        while time.time() - start_time < 5:
+            data = stream.read(1024)
+            current_value = np.sum(np.abs(np.frombuffer(data, dtype=np.int16)))
+            if current_value < min_v:
+                min_v = current_value
+            if current_value > max_v:
+                max_v = current_value
+
+        minmax = (int(min_v), int(max_v))
+        print(minmax)
+        return minmax
+
+    def voice_activity_detection(self, vad_second=2):
+
+        self.vad_event.clear()
+
+        # This should be always on thread.
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            frames_per_buffer=1024,
+        )
+
+        print("Detecting voice activity...")
+
+        # 1024 samples / 44100 Hz
+        window_size = vad_second * 44100 // 1024
+
+        frames = []
+        less_than_speak = self.silence_minmax[1] * 4
+        threshold = less_than_speak * window_size
+
+        audio_window = deque(maxlen=window_size)
+        audio_window.extend([less_than_speak // 10] * audio_window.maxlen)
+        window_value = less_than_speak * window_size // 10
+
+        while True:
+            data = stream.read(1024)
+            frames.append(data)
+
+            current_value = np.sum(np.abs(np.frombuffer(data, dtype=np.int16)))
+            last_value = audio_window.popleft()
+            audio_window.append(current_value)
+            window_value = window_value + current_value - last_value
+            # print(current_value, last_value, window_value, threshold)
+
+            if window_value > threshold:
+                break
+        print("Voice detected")
+        self.vad_event.set()
+
+    def ved_listen_to_wav(self, wav_file_path, ved_second=3):
+        """
+        Voice Endpointing Detection
+        """
+        p = pyaudio.PyAudio()
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=44100,
+            input=True,
+            frames_per_buffer=1024,
+        )
+        print("Now make sound for record")
+
+        # 1024 samples / 44100 Hz
+        window_size = ved_second * 44100 // 1024
+
+        frames = []
+        # 50938 on mac
+        more_than_slience = self.silence_minmax[1]
+        threshold = more_than_slience * window_size
+
+        audio_window = deque(maxlen=window_size)  # Sliding window for audio data
+        audio_window.extend([more_than_slience * 10] * audio_window.maxlen)
+        window_value = more_than_slience * 10 * window_size
+
+        while True:
+            data = stream.read(1024)
+            frames.append(data)
+
+            current_value = np.sum(np.abs(np.frombuffer(data, dtype=np.int16)))
+            last_value = audio_window.popleft()
+            audio_window.append(current_value)
+            window_value = window_value + current_value - last_value
+            # print(current_value, last_value, window_value, threshold)
+
+            if window_value < threshold:
+                break
+
+        # Save the recorded data as a WAV file
+        wave_file = wave.open(wav_file_path, "wb")
+        wave_file.setnchannels(1)
+        wave_file.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wave_file.setframerate(44100)
+        wave_file.writeframes(b"".join(frames))
+        wave_file.close()
 
 
 class Robot:
