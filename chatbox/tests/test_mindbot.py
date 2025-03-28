@@ -48,4 +48,25 @@ class MindbotTestCase(TestCase):
             }
         )
         time.sleep(1)
-        self.assertTrue(self.bot.stop_lecture())
+        last_memory = self.bot.stop_lecture()
+        self.assertEqual(last_memory["state"], "lecturer")
+        self.assertEqual(last_memory["current_code_style"], "code")
+
+    def test_restart_lecture(self):
+        self.bot.start_lecture(
+            {
+                "ipynb": "chatbox/static/chatbox/mm-course/lang/eng/family/01_family_run.ipynb",
+                "current_lesson": 0,
+                "current_code_style": "sof",
+                "current_code_info": 0,
+            }
+        )
+        time.sleep(1)
+        last_memory = self.bot.stop_lecture()
+        self.assertEqual(last_memory["state"], "lecturer")
+        self.assertEqual(last_memory["current_code_style"], "code")
+        time.sleep(2)
+
+        self.bot.start_lecture(last_memory)
+        time.sleep(2)
+        self.bot.stop_lecture()
