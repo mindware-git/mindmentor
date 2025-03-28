@@ -33,7 +33,7 @@ class MindbotTestCase(TestCase):
                 }
             )
         )
-        self.bot.lecture_thread.join()
+        self.bot.working_thread.join()
 
     def test_stop_lecture_negative(self):
         self.assertEqual(self.bot.stop_lecture(), {})
@@ -69,4 +69,21 @@ class MindbotTestCase(TestCase):
 
         self.bot.start_lecture(last_memory)
         time.sleep(2)
+        self.bot.stop_lecture()
+
+    def test_idle_assistant(self):
+        self.bot.start_assistant()
+
+    def test_lecture_assistant(self):
+        self.bot.start_lecture(
+            {
+                "ipynb": "chatbox/static/chatbox/mm-course/lang/eng/family/01_family_run.ipynb",
+                "current_lesson": 0,
+                "current_code_style": "sof",
+                "current_code_info": 0,
+            }
+        )
+        time.sleep(1)
+        self.bot.start_assistant()
+        time.sleep(10)
         self.bot.stop_lecture()

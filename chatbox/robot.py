@@ -46,7 +46,7 @@ class Mindbot:
         self.lock = threading.Lock()
         self.memory = [{"state": "idle"}]
 
-        self.lecture_thread = None
+        self.working_thread = None
         self.stop_event = threading.Event()
         self.vad_thread = None
         self.vad_event = threading.Event()
@@ -63,6 +63,7 @@ class Mindbot:
         # self.measure_silence()
         self.silence_minmax = data["silence"]
         self.device_tree = {"soc": platform.platform()}
+        self.cloud_llm = True
 
     def speak_from_wav(self, wav_file_path, sector=0) -> int:
         with wave.open(wav_file_path, "rb") as wf:
@@ -194,7 +195,7 @@ class Mindbot:
         print("Voice detected")
         self.vad_event.set()
 
-    def ved_listen_to_wav(self, wav_file_path, ved_second=10):
+    def ved_listen_to_wav(self, wav_file_path, ved_second=3):
         """
         Voice Endpointing Detection
         """
@@ -252,10 +253,10 @@ class Mindbot:
         self.memory.append({"state": "lecturer"})
         self.memory[-1].update(lecture_info)
 
-        if self.lecture_thread is None or not self.lecture_thread.is_alive():
+        if self.working_thread is None or not self.working_thread.is_alive():
             self.stop_event.clear()
-            self.lecture_thread = threading.Thread(target=self.lecture)
-            self.lecture_thread.start()
+            self.working_thread = threading.Thread(target=self.lecture)
+            self.working_thread.start()
             return True
         else:
             print("should not be here!")
@@ -266,14 +267,14 @@ class Mindbot:
             print("Not lecturing")
             return {}
 
-        if self.lecture_thread and self.lecture_thread.is_alive():
+        if self.working_thread and self.working_thread.is_alive():
             self.stop_event.set()
         else:
             print("stop_lecture : Lecture thread is not running.")
 
         # Wait for the thread to finish
-        if self.lecture_thread:
-            self.lecture_thread.join()  # Wait for the thread to finish
+        if self.working_thread:
+            self.working_thread.join()  # Wait for the thread to finish
 
         last_memory = self.memory.pop()
         return last_memory
@@ -394,6 +395,113 @@ class Mindbot:
 
         else:
             print("unknown style")
+
+    def start_assistant(self):
+        if self.working_thread is not None and self.working_thread.is_alive():
+            print("Already working")
+            self.stop_event.set()
+            self.working_thread.join()
+            # Keep memory
+
+        self.stop_event.clear()
+        self.working_thread = threading.Thread(target=self.assistant)
+        self.working_thread.start()
+
+    def assistant(self):
+        # AI assistant code
+        self.memory.append({"state": "teaching_assistant"})
+
+        if RPI5_AVAILABLE:
+            pwm = HardwarePWM(pwm_channel=2, hz=50, chip=2)
+            pwm.start(7.5)
+            pwm.change_duty_cycle(12)
+
+        self.speak_from_wav("chatbox/res/react_sara.wav")
+
+        self.ved_listen_to_wav("question.wav")
+
+        if self.cloud_llm:
+            self.speak_from_wav("question.wav")
+        else:
+            client = groq.Client(api_key=settings.GROQ_API_KEY)
+            filename = "question.wav"  # Replace with the path to your audio file
+            with open(filename, "rb") as f:
+                try:
+                    completion = client.audio.transcriptions.create(
+                        model="distil-whisper-large-v3-en",
+                        file=(filename, f.read()),
+                        response_format="text",
+                    )
+                    print(completion)
+                except Exception as e:
+                    return f"Error in transcription: {str(e)}"
+
+            # Now llm generate answer
+            # TODO: stream API, RAG
+            chat_completion = client.chat.completions.create(
+                #
+                # Required parameters
+                #
+                messages=[
+                    # Set an optional system message. This sets the behavior of the
+                    # assistant and can be used to provide specific instructions for
+                    # how it should behave throughout the conversation.
+                    {"role": "system", "content": "you are a helpful class teacher."},
+                    # Set a user message for the assistant to respond to.
+                    {
+                        "role": "user",
+                        "content": completion,
+                    },
+                ],
+                # The language model which will generate the completion.
+                model="llama-3.3-70b-versatile",
+                #
+                # Optional parameters
+                #
+                # Controls randomness: lowering results in less random completions.
+                # As the temperature approaches zero, the model will become deterministic
+                # and repetitive.
+                temperature=0.5,
+                # The maximum number of tokens to generate. Requests can use up to
+                # 32,768 tokens shared between prompt and completion.
+                max_completion_tokens=64,
+                # Controls diversity via nucleus sampling: 0.5 means half of all
+                # likelihood-weighted options are considered.
+                top_p=1,
+                # A stop sequence is a predefined or user-specified text string that
+                # signals an AI to stop generating content, ensuring its responses
+                # remain focused and concise. Examples include punctuation marks and
+                # markers like "[end]".
+                stop=None,
+                # If set, partial message deltas will be sent.
+                stream=False,
+            )
+
+            # Print the completion returned by the LLM.
+            answer = chat_completion.choices[0].message.content
+            print(answer)
+
+            # make answer
+            # gtts only makes mp3 file
+            speech = gTTS(text=answer, slow=False)
+            audio_fp = BytesIO()
+            speech.write_to_fp(audio_fp)
+            audio_fp.seek(0)
+            audio = AudioSegment.from_file(audio_fp, format="mp3")
+            audio.export("answer.wav", format="wav")
+
+            self.speak_from_wav("answer.wav")
+
+        print("TA done")
+
+        if RPI5_AVAILABLE:
+            pwm.change_duty_cycle(7.5)
+
+        self.memory.pop()
+        prev_state = self.memory[-1]["state"]
+        # Check previous state and if lecturer then jump to lecture
+        if prev_state == "lecturer":
+            self.lecture()
 
 
 class Robot:
