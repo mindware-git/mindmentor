@@ -1,5 +1,6 @@
 from unittest import TestCase
 from chatbox.robot import Mindbot
+import time
 
 
 class MindbotTestCase(TestCase):
@@ -32,3 +33,19 @@ class MindbotTestCase(TestCase):
                 }
             )
         )
+        self.bot.lecture_thread.join()
+
+    def test_stop_lecture_negative(self):
+        self.assertEqual(self.bot.stop_lecture(), {})
+
+    def test_stop_lecture_positive(self):
+        self.bot.start_lecture(
+            {
+                "ipynb": "chatbox/static/chatbox/mm-course/lang/eng/family/01_family_run.ipynb",
+                "current_lesson": 0,
+                "current_code_style": "sof",
+                "current_code_info": 0,
+            }
+        )
+        time.sleep(1)
+        self.assertTrue(self.bot.stop_lecture())

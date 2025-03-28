@@ -261,8 +261,22 @@ class Mindbot:
             print("should not be here!")
         return False
 
-    def stop_lecture(self):
-        pass
+    def stop_lecture(self) -> dict:
+        if self.memory[-1]["state"] != "lecturer":
+            print("Not lecturing")
+            return {}
+
+        if self.lecture_thread and self.lecture_thread.is_alive():
+            self.stop_event.set()
+        else:
+            print("stop_lecture : Lecture thread is not running.")
+
+        # Wait for the thread to finish
+        if self.lecture_thread:
+            self.lecture_thread.join()  # Wait for the thread to finish
+
+        last_memory = self.memory.pop()
+        return last_memory
 
     def lecture(self):
         ipynb = self.memory[-1]["ipynb"]
