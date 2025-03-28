@@ -345,43 +345,10 @@ class Mindbot:
                                 audio.export("lesson.wav", format="wav")
                                 full_audio_path = "lesson.wav"
 
-                            # Open the WAV file
-                            wf = wave.open(full_audio_path, "rb")
-
-                            # Create a PyAudio object
-                            p = pyaudio.PyAudio()
-
-                            # Open a stream to play the audio
-                            stream = p.open(
-                                format=p.get_format_from_width(wf.getsampwidth()),
-                                channels=wf.getnchannels(),
-                                rate=wf.getframerate(),
-                                output=True,
-                            )
-
-                            # Read data in chunks
-                            chunk_size = 1024
-                            # move wf to code_info
-                            wf.setpos(code_info * chunk_size)
-
-                            data = wf.readframes(chunk_size)
-
-                            while data:
-                                stream.write(data)
-                                code_info += 1
-                                if self.stop_event.is_set():
-                                    self.memory[-1]["current_code_info"] = code_info
-                                    return
-
-                                data = wf.readframes(chunk_size)
-
-                            code_info = self.memory[-1]["current_code_info"] = 0
-
-                            # Stop and close the stream
-                            stream.stop_stream()
-                            stream.close()
-                            p.terminate()
-                            wf.close()
+                            audio_head = self.speak_from_wav(full_audio_path, code_info)
+                            self.memory[-1]["current_code_info"] = audio_head
+                            if audio_head != 0:
+                                return
 
                         elif "print(" in source:
                             assert (
