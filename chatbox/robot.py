@@ -24,6 +24,7 @@ import pyaudio
 import sounddevice
 import groq
 import tomllib
+import platform
 
 from django.conf import settings
 from asgiref.sync import sync_to_async, async_to_sync
@@ -43,8 +44,9 @@ class Mindbot:
 
     def __init__(self):
         self.lock = threading.Lock()
-        self.state = ["Idle"]
+        self.memory = [{"state": "idle"}]
 
+        self.lecture_thread = None
         self.stop_event = threading.Event()
         self.vad_thread = None
         self.vad_event = threading.Event()
@@ -60,6 +62,7 @@ class Mindbot:
             data = tomllib.load(f)
         # self.measure_silence()
         self.silence_minmax = data["silence"]
+        self.device_tree = {"soc": platform.platform()}
 
     def speak_from_wav(self, wav_file_path, sector=0) -> int:
         with wave.open(wav_file_path, "rb") as wf:
@@ -237,6 +240,179 @@ class Mindbot:
         wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
+
+    # start, stop lecture
+    # agent mode is can not control
+
+    def start_lecture(self, lecture_info) -> bool:
+        if self.memory[-1]["state"] != "idle":
+            print("Not idle so can not jump to lecturer")
+            return False
+
+        self.memory.append({"state": "lecturer"})
+        self.memory[-1].update(lecture_info)
+
+        if self.lecture_thread is None or not self.lecture_thread.is_alive():
+            self.stop_event.clear()
+            self.lecture_thread = threading.Thread(target=self.lecture)
+            self.lecture_thread.start()
+            return True
+        else:
+            print("should not be here!")
+        return False
+
+    def stop_lecture(self):
+        pass
+
+    def lecture(self):
+        ipynb = self.memory[-1]["ipynb"]
+        code_idx = self.memory[-1]["current_lesson"]
+        code_style = self.memory[-1]["current_code_style"]
+        code_info = self.memory[-1]["current_code_info"]
+
+        room_group_name = "classroom"
+        channel_layer = get_channel_layer()
+
+        while code_style != "eof":
+            if self.stop_event.is_set():
+                return
+
+            if code_style == "sof":
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {"type": "classroom_message", "message": {"type": "sof"}},
+                )
+
+                code_style = self.memory[-1]["current_code_style"] = "code"
+
+            elif code_style == "code":
+                try:
+                    with open(ipynb) as f:
+                        notebook = nbformat.read(f, as_version=4)
+                except FileNotFoundError:
+                    print("Lesson file not found.")
+                    return
+
+                ipynb_prefix = ipynb.split(os.sep)[:-1]
+                static_prefix = ipynb_prefix[2:]
+                ipynb_dir = os.path.join(*ipynb_prefix)
+                static_dir = os.path.join(*static_prefix)
+
+                for idx, cell in enumerate(notebook.cells):
+
+                    # jump to status.memory["current_lesson"]
+                    if idx < code_idx:
+                        continue
+
+                    if cell.cell_type == "code":
+                        source = cell.source
+                        if "Image(" in source:
+                            image_path = source.split('"')[1]
+                            full_image_path = os.path.join(static_dir, image_path)
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {
+                                        "type": "image",
+                                        "path": full_image_path,
+                                    },
+                                },
+                            )
+                        elif "Audio(" in source:
+                            audio_path = source.split('"')[1]
+                            full_audio_path = os.path.join(ipynb_dir, audio_path)
+
+                            # if audio extension is mp3
+                            if full_audio_path.endswith(".mp3"):
+                                audio = AudioSegment.from_file(
+                                    full_audio_path, format="mp3"
+                                )
+                                audio.export("lesson.wav", format="wav")
+                                full_audio_path = "lesson.wav"
+
+                            # Open the WAV file
+                            wf = wave.open(full_audio_path, "rb")
+
+                            # Create a PyAudio object
+                            p = pyaudio.PyAudio()
+
+                            # Open a stream to play the audio
+                            stream = p.open(
+                                format=p.get_format_from_width(wf.getsampwidth()),
+                                channels=wf.getnchannels(),
+                                rate=wf.getframerate(),
+                                output=True,
+                            )
+
+                            # Read data in chunks
+                            chunk_size = 1024
+                            # move wf to code_info
+                            wf.setpos(code_info * chunk_size)
+
+                            data = wf.readframes(chunk_size)
+
+                            while data:
+                                stream.write(data)
+                                code_info += 1
+                                if self.stop_event.is_set():
+                                    self.memory[-1]["current_code_info"] = code_info
+                                    return
+
+                                data = wf.readframes(chunk_size)
+
+                            code_info = self.memory[-1]["current_code_info"] = 0
+
+                            # Stop and close the stream
+                            stream.stop_stream()
+                            stream.close()
+                            p.terminate()
+                            wf.close()
+
+                        elif "print(" in source:
+                            assert (
+                                cell.outputs is not None and len(cell.outputs) > 0
+                            ), "ipynb should executed all"
+                            print_text = cell.outputs[0].text
+
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {"type": "text", "content": print_text},
+                                },
+                            )
+                        elif "clear_output(wait=True)" in source:
+                            async_to_sync(channel_layer.group_send)(
+                                room_group_name,
+                                {
+                                    "type": "classroom_message",
+                                    "message": {"type": "clear"},
+                                },
+                            )
+                            time.sleep(2)
+                        else:
+                            print("Unkown code block")
+                            print(source)
+
+                    self.memory[-1]["current_lesson"] = idx + 1
+                    if self.stop_event.is_set():
+                        return
+
+                code_style = self.memory[-1]["current_code_style"] = "eof"
+
+        if code_style == "eof":
+            print("send eof")
+
+            # Send EOF message after processing all cells
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {"type": "classroom_message", "message": {"type": "eof"}},
+            )
+            print("Keep eof until exiplit reset")
+
+        else:
+            print("unknown style")
 
 
 class Robot:

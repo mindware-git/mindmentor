@@ -22,7 +22,13 @@ class MindbotTestCase(TestCase):
         pass
 
     def test_start_lecture(self):
-        pass
-
-    def test_start_lecture(self):
-        pass
+        self.assertTrue(
+            self.bot.start_lecture(
+                {
+                    "ipynb": "chatbox/static/chatbox/mm-course/lang/eng/family/01_family_run.ipynb",
+                    "current_lesson": 0,
+                    "current_code_style": "sof",
+                    "current_code_info": 0,
+                }
+            )
+        )
