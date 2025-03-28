@@ -397,6 +397,9 @@ class Mindbot:
             print("unknown style")
 
     def start_assistant(self):
+        if self.memory[-1]["state"] != "teaching_assistant":
+            return False
+
         if self.working_thread is not None and self.working_thread.is_alive():
             print("Already working")
             self.stop_event.set()
@@ -406,6 +409,7 @@ class Mindbot:
         self.stop_event.clear()
         self.working_thread = threading.Thread(target=self.assistant)
         self.working_thread.start()
+        return True
 
     def assistant(self):
         # AI assistant code

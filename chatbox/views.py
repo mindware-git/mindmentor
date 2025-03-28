@@ -3,10 +3,10 @@ import platform
 from django.shortcuts import render
 from django.http import JsonResponse
 
-from .robot import Robot, RobotStatus
+from .robot import Mindbot
 from .models import Lecture
 
-robot = Robot()
+bot = Mindbot()
 
 
 def auth(request):
@@ -66,24 +66,12 @@ def teachers(request):
 
 def ask_question(request):
     if request.method == "GET":
-        # Check if current state is lecturer and handle transition
-        status = RobotStatus.objects.get(name="mindmentor")
-        prev_state = status.state
-        if status.state == "lecturer":
-            robot.save_lecture_and_exit()
-
-        status_stop = RobotStatus.objects.get(name="mindmentor")
-        status_stop.memory["prev_state"] = prev_state
-        status_stop.save()
-        if robot.ta():
+        if bot.start_assistant():
             return JsonResponse({"status": "success"})
     return JsonResponse({"status": "failed"}, status=400)
 
 
 def home(request):
-    robot = Robot()
-    robot.init_db()
-
     # Look for .ipynb files in the course directory and add them to Lecture DB
     course_dir = os.path.join("chatbox", "static", "chatbox", "mm-course")
     if os.path.exists(course_dir):
@@ -105,9 +93,12 @@ def home(request):
                         title=lecture_name,
                         defaults={
                             "description": {
-                                "file_path": lecture_path,
                                 "course": course_name,
                                 "content": [],
+                                "ipynb": lecture_path,
+                                "current_lesson": 0,
+                                "current_code_style": "sof",
+                                "current_code_info": 0,
                             }
                         },
                     )
@@ -131,12 +122,10 @@ def start_lecture(request, lecture_id):
     if request.method == "GET":
         try:
             lecture = Lecture.objects.get(id=lecture_id)
-            status = RobotStatus.objects.get(name="mindmentor")
 
-            status.memory["ipynb"] = lecture.description["file_path"]
-            status.save()
+            lecture_info = lecture.description
 
-            if robot.restore_lecture_and_resume():
+            if bot.start_lecture(lecture_info):
                 return JsonResponse({"message": "Lecture started successfully"})
             else:
                 return JsonResponse({"error": "Robot busy"}, status=500)
@@ -156,11 +145,20 @@ def stop_lecture(request, lecture_id):
     if request.method == "GET":
         try:
             # TODO: check start, stop pair
-            # lecture = Lecture.objects.get(id=lecture_id)
-            if robot.save_lecture_and_exit():
-                return JsonResponse({"message": "Lecture started successfully"})
-            else:
+            lecture = Lecture.objects.get(id=lecture_id)
+            lecture_info = bot.stop_lecture()
+
+            if lecture_info == {}:
                 return JsonResponse({"message": "Lecture stopped successfully"})
+            else:
+                lecture_description = lecture.description
+
+                lecture_description.update(lecture_info)
+                lecture_description.pop("state", None)
+
+                lecture.description = lecture_description
+                lecture.save()
+                return JsonResponse({"message": "Lecture started successfully"})
 
         except Lecture.DoesNotExist:
             return JsonResponse({"error": "Lecture not found"}, status=404)
@@ -176,10 +174,17 @@ def reset_lecture(request, lecture_id):
     """Reset a lecture session."""
     if request.method == "GET":
         try:
-            status = RobotStatus.objects.get(name="mindmentor")
-            if status.state != "lecturer":
+
+            lecture = Lecture.objects.get(id=lecture_id)
+
+            if bot.memory[-1]["state"] != "lecturer":
                 return JsonResponse({"error": "Robot busy"}, status=500)
-            robot.init_db()
+            if bot.memory[-1]["current_code_style"] == "eof":
+                lecture_info = bot.stop_lecture()
+                # Init lecture info
+
+                lecture.description = lecture_info
+                lecture.save()
             return JsonResponse({"message": "Lecture reset successfully"})
 
         except Lecture.DoesNotExist:
