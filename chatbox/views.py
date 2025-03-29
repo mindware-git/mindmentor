@@ -7,6 +7,7 @@ from .robot import Mindbot
 from .models import Lecture
 
 bot = Mindbot()
+bot.boot()
 
 
 def auth(request):

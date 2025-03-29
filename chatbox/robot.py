@@ -120,6 +120,9 @@ class Mindbot:
 
         minmax = (int(min_v), int(max_v))
         print(minmax)
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
         return minmax
 
     def webrtc_vad(self):
@@ -193,6 +196,9 @@ class Mindbot:
             if window_value > threshold:
                 break
         print("Voice detected")
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
         self.vad_event.set()
 
     def ved_listen_to_wav(self, wav_file_path, ved_second=3):
@@ -241,6 +247,9 @@ class Mindbot:
         wave_file.setframerate(48000)
         wave_file.writeframes(b"".join(frames))
         wave_file.close()
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
 
     # start, stop lecture
     # agent mode is can not control
@@ -347,7 +356,9 @@ class Mindbot:
                                 full_audio_path = "lesson.wav"
 
                             audio_head = self.speak_from_wav(full_audio_path, code_info)
-                            code_info = self.memory[-1]["current_code_info"] = audio_head
+                            code_info = self.memory[-1]["current_code_info"] = (
+                                audio_head
+                            )
                             if audio_head != 0:
                                 return
 
@@ -397,7 +408,7 @@ class Mindbot:
             print("unknown style")
 
     def start_assistant(self):
-        if self.memory[-1]["state"] != "teaching_assistant":
+        if self.memory[-1]["state"] == "teaching_assistant":
             return False
 
         if self.working_thread is not None and self.working_thread.is_alive():
