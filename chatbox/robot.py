@@ -347,7 +347,7 @@ class Mindbot:
                                 full_audio_path = "lesson.wav"
 
                             audio_head = self.speak_from_wav(full_audio_path, code_info)
-                            self.memory[-1]["current_code_info"] = audio_head
+                            code_info = self.memory[-1]["current_code_info"] = audio_head
                             if audio_head != 0:
                                 return
 

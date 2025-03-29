@@ -174,17 +174,19 @@ def reset_lecture(request, lecture_id):
     """Reset a lecture session."""
     if request.method == "GET":
         try:
-
             lecture = Lecture.objects.get(id=lecture_id)
+            print(bot.memory[-1]["state"])
 
             if bot.memory[-1]["state"] != "lecturer":
                 return JsonResponse({"error": "Robot busy"}, status=500)
-            if bot.memory[-1]["current_code_style"] == "eof":
-                lecture_info = bot.stop_lecture()
-                # Init lecture info
+            lecture_info = bot.stop_lecture()
+            init_description = lecture.description
+            init_description["current_lesson"] = 0
+            init_description["current_code_style"] = "sof"
+            init_description["current_code_info"] = 0
 
-                lecture.description = lecture_info
-                lecture.save()
+            lecture.description = init_description
+            lecture.save()
             return JsonResponse({"message": "Lecture reset successfully"})
 
         except Lecture.DoesNotExist:
