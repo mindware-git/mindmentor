@@ -422,6 +422,76 @@ class Mindbot:
         self.working_thread.start()
         return True
 
+    def cloud_assistant(self):
+        client = groq.Client(api_key=settings.GROQ_API_KEY)
+        filename = "question.wav"  # Replace with the path to your audio file
+        with open(filename, "rb") as f:
+            try:
+                completion = client.audio.transcriptions.create(
+                    model="distil-whisper-large-v3-en",
+                    file=(filename, f.read()),
+                    response_format="text",
+                )
+                print(completion)
+            except Exception as e:
+                return f"Error in transcription: {str(e)}"
+
+        # Now llm generate answer
+        # TODO: stream API, RAG
+        chat_completion = client.chat.completions.create(
+            #
+            # Required parameters
+            #
+            messages=[
+                # Set an optional system message. This sets the behavior of the
+                # assistant and can be used to provide specific instructions for
+                # how it should behave throughout the conversation.
+                {"role": "system", "content": "you are a helpful class teacher."},
+                # Set a user message for the assistant to respond to.
+                {
+                    "role": "user",
+                    "content": completion,
+                },
+            ],
+            # The language model which will generate the completion.
+            model="llama-3.3-70b-versatile",
+            #
+            # Optional parameters
+            #
+            # Controls randomness: lowering results in less random completions.
+            # As the temperature approaches zero, the model will become deterministic
+            # and repetitive.
+            temperature=0.5,
+            # The maximum number of tokens to generate. Requests can use up to
+            # 32,768 tokens shared between prompt and completion.
+            max_completion_tokens=64,
+            # Controls diversity via nucleus sampling: 0.5 means half of all
+            # likelihood-weighted options are considered.
+            top_p=1,
+            # A stop sequence is a predefined or user-specified text string that
+            # signals an AI to stop generating content, ensuring its responses
+            # remain focused and concise. Examples include punctuation marks and
+            # markers like "[end]".
+            stop=None,
+            # If set, partial message deltas will be sent.
+            stream=False,
+        )
+
+        # Print the completion returned by the LLM.
+        answer = chat_completion.choices[0].message.content
+        print(answer)
+
+        # make answer
+        # gtts only makes mp3 file
+        speech = gTTS(text=answer, slow=False)
+        audio_fp = BytesIO()
+        speech.write_to_fp(audio_fp)
+        audio_fp.seek(0)
+        audio = AudioSegment.from_file(audio_fp, format="mp3")
+        audio.export("answer.wav", format="wav")
+
+        self.speak_from_wav("answer.wav")
+
     def assistant(self):
         # AI assistant code
         self.memory.append({"state": "teaching_assistant"})
@@ -436,76 +506,9 @@ class Mindbot:
         self.ved_listen_to_wav("question.wav")
 
         if self.cloud_llm:
-            self.speak_from_wav("question.wav")
+            self.cloud_assistant()
         else:
-            client = groq.Client(api_key=settings.GROQ_API_KEY)
-            filename = "question.wav"  # Replace with the path to your audio file
-            with open(filename, "rb") as f:
-                try:
-                    completion = client.audio.transcriptions.create(
-                        model="distil-whisper-large-v3-en",
-                        file=(filename, f.read()),
-                        response_format="text",
-                    )
-                    print(completion)
-                except Exception as e:
-                    return f"Error in transcription: {str(e)}"
-
-            # Now llm generate answer
-            # TODO: stream API, RAG
-            chat_completion = client.chat.completions.create(
-                #
-                # Required parameters
-                #
-                messages=[
-                    # Set an optional system message. This sets the behavior of the
-                    # assistant and can be used to provide specific instructions for
-                    # how it should behave throughout the conversation.
-                    {"role": "system", "content": "you are a helpful class teacher."},
-                    # Set a user message for the assistant to respond to.
-                    {
-                        "role": "user",
-                        "content": completion,
-                    },
-                ],
-                # The language model which will generate the completion.
-                model="llama-3.3-70b-versatile",
-                #
-                # Optional parameters
-                #
-                # Controls randomness: lowering results in less random completions.
-                # As the temperature approaches zero, the model will become deterministic
-                # and repetitive.
-                temperature=0.5,
-                # The maximum number of tokens to generate. Requests can use up to
-                # 32,768 tokens shared between prompt and completion.
-                max_completion_tokens=64,
-                # Controls diversity via nucleus sampling: 0.5 means half of all
-                # likelihood-weighted options are considered.
-                top_p=1,
-                # A stop sequence is a predefined or user-specified text string that
-                # signals an AI to stop generating content, ensuring its responses
-                # remain focused and concise. Examples include punctuation marks and
-                # markers like "[end]".
-                stop=None,
-                # If set, partial message deltas will be sent.
-                stream=False,
-            )
-
-            # Print the completion returned by the LLM.
-            answer = chat_completion.choices[0].message.content
-            print(answer)
-
-            # make answer
-            # gtts only makes mp3 file
-            speech = gTTS(text=answer, slow=False)
-            audio_fp = BytesIO()
-            speech.write_to_fp(audio_fp)
-            audio_fp.seek(0)
-            audio = AudioSegment.from_file(audio_fp, format="mp3")
-            audio.export("answer.wav", format="wav")
-
-            self.speak_from_wav("answer.wav")
+            self.speak_from_wav("question.wav")
 
         print("TA done")
 
