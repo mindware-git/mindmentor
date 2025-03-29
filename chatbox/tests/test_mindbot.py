@@ -1,6 +1,7 @@
 from unittest import TestCase
 from chatbox.robot import Mindbot
 import time
+from threading import Thread
 
 
 class MindbotTestCase(TestCase):
@@ -20,7 +21,14 @@ class MindbotTestCase(TestCase):
         """
         While mindbot speaking, voice_activity_detection only detects other's voice.
         """
-        pass
+        speak_thread = Thread(target=self.bot.speak_from_wav, args=("chatbox/res/lecture1.wav",))
+        ved_thread = Thread(target=self.bot.ved_listen_to_wav, args=("same_time.wav",))
+
+        speak_thread.start()
+        ved_thread.start()
+
+        speak_thread.join()
+        ved_thread.join()
 
     def test_start_lecture(self):
         self.assertTrue(
@@ -90,4 +98,3 @@ class MindbotTestCase(TestCase):
 
     def test_cloud_assistantistant(self):
         self.bot.cloud_simple_assistant()
-        time.sleep(10)
