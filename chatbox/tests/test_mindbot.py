@@ -87,3 +87,7 @@ class MindbotTestCase(TestCase):
         self.bot.start_assistant()
         time.sleep(10)
         self.bot.stop_lecture()
+
+    def test_cloud_assistantistant(self):
+        self.bot.cloud_simple_assistant()
+        time.sleep(10)

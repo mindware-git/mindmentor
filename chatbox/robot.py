@@ -422,7 +422,8 @@ class Mindbot:
         self.working_thread.start()
         return True
 
-    def cloud_assistant(self):
+    def cloud_simple_assistant(self):
+        self.ved_listen_to_wav("question.wav")
         client = groq.Client(api_key=settings.GROQ_API_KEY)
         filename = "question.wav"  # Replace with the path to your audio file
         with open(filename, "rb") as f:
@@ -503,11 +504,10 @@ class Mindbot:
 
         self.speak_from_wav("chatbox/res/react_sara.wav")
 
-        self.ved_listen_to_wav("question.wav")
-
         if self.cloud_llm:
-            self.cloud_assistant()
+            self.cloud_simple_assistant()
         else:
+            self.ved_listen_to_wav("question.wav")
             self.speak_from_wav("question.wav")
 
         print("TA done")
